@@ -1,0 +1,42 @@
+{
+  "name": "mandala-stack-studio",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:atomm": "VITE_TARGET=atomm vite",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx scripts/pipeline-test.ts",
+    "build:atomm": "tsc --noEmit && VITE_TARGET=atomm vite build",
+    "build:standalone": "tsc --noEmit && VITE_TARGET=standalone vite build",
+    "build": "npm run build:atomm && npm run build:standalone",
+    "release": "npm run build && node scripts/package-release.mjs"
+  },
+  "dependencies": {
+    "abs-svg-path": "^0.1.1",
+    "adaptive-bezier-curve": "^1.0.3",
+    "clipper-lib": "^6.4.2",
+    "dompurify": "^3.4.17",
+    "earcut": "^3.2.4",
+    "jszip": "^3.10.2",
+    "normalize-svg-path": "^1.1.0",
+    "parse-svg-path": "^0.2.0",
+    "perfect-freehand": "^1.2.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@types/earcut": "^3.0.0",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.187.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-singlefile": "^2.3.4"
+  }
+}

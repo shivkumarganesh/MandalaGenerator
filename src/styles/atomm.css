@@ -1,0 +1,678 @@
+/* atomm Generator UI stylesheet — copied verbatim from
+   https://dev.atomm.com/templates/layout-5-multi.skeleton.html. Do not edit; extend in app.css. */
+
+/* atomm Generator UI — design.css
+ * The one stylesheet behind /design.md and the five layout templates under /templates/.
+ * Tokens first (they mirror the front matter of design.md, same names), then the layout
+ * skeleton, then the components. Change a token value to reskin; do not rename a token.
+ * Skeleton = layout regions, control heights, radii, the state set each control shows and the
+ * aria hooks it keys off: keep as is.
+ * Skin = every --color-* value and the type sizes: swap the whole set if you want.
+ *
+ * The token layer is the platform's design-token export, verbatim: names and values both.
+ * Tokens marked [measured] are not in that export — they are measured off the layout frames
+ * that ship beside it. */
+
+/* ───────────────────────── 1. Tokens ───────────────────────── */
+:root {
+  /* primitives — the export's ramps, verbatim. The only place a raw colour appears. */
+  --neutral-0: #ffffff;
+  --neutral-25: #fcfcfd;
+  --neutral-50: #f6f6f7;
+  --neutral-100: #eeeff1;
+  --neutral-200: #e7e8ea;
+  --neutral-300: #d6d8db;
+  --neutral-400: #b9bbc0;
+  --neutral-500: #85878b;
+  --neutral-800: #3d3e42;
+  --neutral-900: #292a2d;
+  --neutral-950: #171719;
+  --neutral-alpha-25: rgba(61, 62, 66, 0.06);
+  --neutral-alpha-50: rgba(61, 62, 66, 0.08);
+  --neutral-alpha-100: rgba(61, 62, 66, 0.12);
+  --neutral-white-alpha-500: rgba(255, 255, 255, 0.5);
+  --atomm-600: #fa253d;
+  --atomm-700: #d9002d;
+  --atomm-800: #b20025;
+  --atomm-alpha-400: rgba(255, 0, 53, 0.4);
+  --blue-100: #f1f6fd;
+  --blue-500: #3f81ea;
+  --blue-600: #3170d5;
+  --green-100: #ecfff0;
+  --green-500: #16b364;
+  --orange-100: #fff3eb;
+  --orange-500: #ff6500;
+  --red-100: #fee9e7;
+  --red-500: #ec221f;
+
+  /* semantic colours — components reference these, never a primitive */
+  --color-bg-default: var(--neutral-0);          /* cards, popups, white controls */
+  --color-bg-subtlest: var(--neutral-25);        /* docked panels */
+  --color-bg-surface: var(--neutral-50);         /* the faint plate under a swatch or a rail-header button */
+  --color-bg-control: var(--neutral-100);        /* the fill of an input, a select, a numeric field */
+  --color-bg-editor: var(--neutral-200);         /* the ground the preview stands on */
+  --color-bg-hover: var(--neutral-alpha-25);
+  --color-bg-active: var(--neutral-alpha-50);
+  /* [measured] the row highlight inside a floating list. bg-hover and bg-active are tuned for a
+   * panel; on the white ground of a popup they land at 1.10–1.14:1 and disappear. */
+  --color-bg-highlight: var(--neutral-alpha-100);
+  --color-bg-overlay: rgba(0, 0, 0, 0.7);        /* dialog scrim */
+  --color-bg-segmented-active: var(--neutral-0);
+  --color-bg-inverse: var(--neutral-950);        /* [measured] the dark header of a generate dialog */
+  --color-bg-inverse-subtle: var(--neutral-white-alpha-500);  /* [measured] a tag on that header */
+  --color-text-primary: var(--neutral-950);
+  --color-text-secondary: var(--neutral-800);
+  --color-text-tertiary: var(--neutral-500);     /* helper text and placeholders; never a value, message or label a decision rests on */
+  --color-text-disabled: var(--neutral-400);
+  --color-text-inverse: var(--neutral-0);
+  --color-stroke-default: var(--neutral-300);
+  --color-stroke-divider: var(--neutral-alpha-50);
+  --color-stroke-strong: var(--neutral-400);     /* [measured] the hover step of a stroke-default border */
+  --color-stroke-active: var(--neutral-800);     /* the border a focused input takes */
+  --color-stroke-surround: var(--blue-600);      /* the focus ring, 4.76:1 on white */
+  --color-stroke-scrollbar: var(--neutral-300);
+  --color-track-off: var(--neutral-300);         /* [measured] switch and slider, off */
+  --color-brand-default: var(--neutral-900);
+  --color-brand-hover: var(--neutral-800);       /* hover lightens one step */
+  --color-brand-active: var(--neutral-950);      /* press goes to the darkest step */
+  --color-brand-disabled: var(--neutral-200);
+  --color-emphasize-default: var(--atomm-600);   /* the platform red: one action per screen, at most */
+  --color-emphasize-hover: var(--atomm-700);
+  --color-emphasize-active: var(--atomm-800);
+  --color-emphasize-disabled: var(--atomm-alpha-400);
+  --color-blue-default: var(--blue-500);         /* info and links */
+  --color-blue-subtlest: var(--blue-100);
+  --color-green-default: var(--green-500);
+  --color-green-subtlest: var(--green-100);
+  --color-warning-default: var(--orange-500);
+  --color-warning-subtlest: var(--orange-100);
+  --color-red-default: var(--red-500);
+  --color-red-subtlest: var(--red-100);
+
+  /* type — the export names a style by its metrics; the role each one carries is in design.md */
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-16-semibold: 600 16px / 22px var(--font-sans);   /* dialog titles */
+  --font-14-medium: 500 14px / 20px var(--font-sans);     /* buttons, rail headings */
+  --font-14-regular: 400 14px / 20px var(--font-sans);   /* the register a generator moves up to */
+  --font-12-medium: 500 12px / 16px var(--font-sans);     /* card titles, segment items */
+  --font-12-regular: 400 12px / 16px var(--font-sans);    /* field labels, values, helper text */
+  --font-11-regular: 400 11px / 16px var(--font-sans);    /* thumbnail labels, "View all" */
+  --font-10-medium: 500 10px / 14px var(--font-sans);     /* tool-rail labels */
+  --font-10-regular: 400 10px / 14px var(--font-sans);    /* the unit pinned to a field's end */
+
+  /* shape */
+  --radius-none: 0;        /* the bottom two corners of an expanded property card header */
+  --radius-small: 4px;     /* tags, 24px icon plates, segment items */
+  --radius-medium: 6px;    /* every control: input, select, button, swatch */
+  --radius-large: 8px;     /* zoom cluster, collapsed pill, thumbnails, icon buttons */
+  --radius-xlarge: 12px;   /* dialogs, the floating rail */
+  --radius-circle: 100px;  /* the export's own value. Only reaches a pill below 200px wide — every
+                            * fully-round thing here (switch 36, thumb 12, Tips capsule 68) is */
+
+  /* spacing */
+  --space-50: 4px; --space-75: 6px; --space-100: 8px; --space-150: 12px; --space-200: 16px; --space-300: 24px;
+
+  /* elevation — the export's three steps; there is no smaller one for a knob */
+  --shadow-100: 0 4px 12px rgba(11, 11, 13, 0.06), 0 0 4px rgba(11, 11, 13, 0.06);
+  --shadow-200: 0 16px 32px rgba(11, 11, 13, 0.06), 0 2px 8px rgba(11, 11, 13, 0.06);
+  --shadow-300: 0 40px 80px rgba(11, 11, 13, 0.06), 0 2px 8px rgba(11, 11, 13, 0.06);
+
+  /* [measured] sizes — off the layout frames, not the token export */
+  --control-mini: 24px; --control-sm: 28px; --control-md: 32px; --control-lg: 40px;
+  --input-h: 28px; --input-w: 92px; --select-w: 110px;
+  --switch-w: 36px; --switch-h: 20px; --switch-knob: 14px;
+  --slider-w: 110px; --slider-track: 3px; --slider-thumb: 12px;
+  --topbar-h: 64px;
+  --stage-h: 52vh;        /* height the canvas keeps once the regions stack */
+  --rail-tools: 64px; --rail-templates: 320px; --rail-lead: 320px; --rail-params: 320px;
+  --rail-floating: 360px; --rail-collapsed: 40px;
+  --thumb: 140px; --thumb-sm: 90px;
+  --dialog-w: 480px;
+  --gutter: var(--space-200);  /* panel padding and canvas inset — an alias, not a fourth number */
+  --min-target: 24px;     /* [measured] WCAG 2.2 SC 2.5.8, not a token in the export */
+
+  /* [measured] motion */
+  --motion-fast: 150ms; --motion-base: 200ms; --motion-easing: cubic-bezier(0.2, 0, 0.38, 1);
+}
+
+/* ───────────────────────── 2. Base ───────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font: var(--font-12-regular);
+  color: var(--color-text-primary);
+  background: var(--color-bg-editor);
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { border: 0; background: none; padding: 0; }
+svg { display: block; }
+
+/* Control cursors are declared together here: click → pointer, typing → text, disabled → not-allowed.
+ * Put a new control on the matching line below. */
+button,
+.switch, .swatch, .slider, .thumb, .select, .select-option, .dropzone, .material, .history-item, .btn-plate,
+[role="option"], [role="combobox"] { cursor: pointer; }
+.input, .input-number, .input-number > input, .textarea, .textarea textarea { cursor: text; }
+/* the whole field is the drag target, unit included */
+.input-number:has([data-drag]), .input-number:has([data-drag]) > * { cursor: ew-resize; }
+.input-number:has([data-drag]:focus), .input-number:has([data-drag]:focus) > * { cursor: text; }
+button:disabled, [aria-disabled="true"],
+.input:disabled, .select:disabled, .slider:disabled, .switch input:disabled { cursor: not-allowed; }
+/* the real input under a decorative layer inherits, so the whole label reads as one target */
+.switch input, .swatch input[type="color"] { cursor: inherit; }
+/* a value readout in a field row is text, not a target */
+.field-row .value { cursor: default; }
+.icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.icon-20 { width: 20px; height: 20px; }
+
+/* keyboard focus: one ring, 2px, offset 2px — the offset keeps it visible on dark buttons */
+:focus-visible { outline: 2px solid var(--color-stroke-surround); outline-offset: 2px; }
+/* the input family shows focus by its own border instead of a ring (two boundaries otherwise) */
+.input:focus-visible, .select:focus-visible, .textarea:focus-within { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+}
+
+/* ───────────────────────── 3. Layout skeleton ───────────────────────── */
+/* .gen-app fills the region the platform gives you. The top bar is the platform's; the
+ * template only draws a stand-in so the proportions are right during development. */
+.gen-app { display: flex; flex-direction: column; height: 100%; min-height: 0; container-type: inline-size; }
+.gen-topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-150);
+  height: var(--topbar-h); padding: 0 var(--space-300); flex: none;
+  background: var(--color-bg-default); border-bottom: 1px solid var(--color-stroke-divider);
+}
+.gen-body { display: flex; flex: 1; min-height: 0; }
+
+/* rails: fixed widths, the canvas absorbs the rest */
+.gen-rail {
+  display: flex; flex-direction: column; flex: none; min-height: 0;
+  background: var(--color-bg-subtlest);
+}
+.gen-rail-tools { width: var(--rail-tools); border-inline-end: 1px solid var(--color-stroke-divider); align-items: center; padding: 14px 0; gap: var(--space-200); }
+.gen-rail-templates { width: var(--rail-templates); border-inline-end: 1px solid var(--color-stroke-default); }
+.gen-rail-lead { width: var(--rail-lead); border-inline-end: 1px solid var(--color-stroke-default); }
+.gen-rail-params { width: var(--rail-params); border-inline-start: 1px solid var(--color-stroke-default); }
+.gen-rail-collapsed {
+  position: absolute; inset-block-start: var(--space-150); inset-inline-start: var(--gutter);
+  height: var(--rail-collapsed); padding: 0 var(--space-200); display: inline-flex; align-items: center; gap: var(--space-200);
+  background: var(--color-bg-default); border: 1px solid var(--color-stroke-default);
+  border-radius: var(--radius-large); box-shadow: var(--shadow-100);
+}
+.gen-rail-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-200) var(--space-200) var(--space-150); flex: none; }
+/* the same header one level down: a block inside a rail (History, Recently used) */
+.gen-rail-header-sub { padding: var(--space-150) var(--space-200); }
+.gen-rail-title { font: var(--font-14-medium); color: var(--color-text-primary); }
+.gen-rail-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--color-stroke-scrollbar) transparent; }
+.gen-rail-footer { flex: none; padding: var(--gutter); display: flex; flex-direction: column; gap: var(--space-150); }
+
+/* the params rail header row: unit toggle + reset */
+.gen-params-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-150) var(--space-200); flex: none; }
+.gen-params-content { display: flex; flex-direction: column; gap: var(--space-150); padding: var(--space-150) var(--space-200); }
+
+/* canvas: base layer, four overlay corners, nothing else */
+.gen-canvas { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--color-bg-editor); overflow: hidden; }
+.gen-canvas-stage { position: absolute; inset: 0; display: grid; place-items: center; cursor: grab; touch-action: none; }
+.gen-canvas-stage[data-panning] { cursor: grabbing; }
+.gen-canvas-top { position: absolute; inset-block-start: var(--gutter); inset-inline: var(--gutter); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.gen-canvas-top > * { pointer-events: auto; }
+.gen-canvas-top .gen-tips { position: absolute; inset-inline-end: 0; inset-block-start: 0; }
+.gen-canvas-bottom { position: absolute; inset-block-end: var(--gutter); inset-inline-start: var(--gutter); display: flex; align-items: center; gap: var(--space-100); }
+/* no right rail: export floats in the bottom-right corner of the canvas */
+.gen-canvas-export {
+  position: absolute; inset-block-end: var(--gutter); inset-inline-end: var(--gutter);
+  min-width: 168px; display: flex; flex-direction: column; gap: var(--space-150);
+}
+.gen-canvas-hint { color: var(--color-text-tertiary); font-size: 12px; text-align: center; }
+/* generic content block inside a lead rail */
+.gen-rail-content { display: flex; flex-direction: column; gap: var(--space-200); padding: var(--space-150) var(--space-200); }
+.gen-rail-content h4 { margin: 0; font: var(--font-12-medium); color: var(--color-text-secondary); }
+.thumb-row { display: flex; gap: var(--space-100); }
+/* the import drop target: 115px, a faint plate behind a dashed hairline, and three stacked lines —
+ * the icon, what to do, and which formats are taken. */
+.dropzone {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-50);
+  min-height: 115px; padding: var(--space-150); text-align: center;
+  background: var(--color-bg-surface); border: 1px dashed var(--color-stroke-divider); border-radius: var(--radius-large);
+}
+.dropzone:hover { border-color: var(--color-stroke-strong); }
+/* the file input covers the label at opacity 0, not `hidden`: display:none would take the only
+ * focusable element out of the tab order. Same trick as the colour swatch below. */
+.dropzone input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.dropzone:focus-within { border-color: var(--color-stroke-active); }
+.dropzone .plate { width: var(--control-mini); height: var(--control-mini); display: grid; place-items: center; border-radius: var(--radius-small); color: var(--color-text-primary); }
+.dropzone strong { font: var(--font-12-medium); color: var(--color-text-primary); }
+.dropzone small { font: var(--font-11-regular); color: var(--color-text-tertiary); }
+
+/* floating variant of the lead rail: a card over the canvas */
+.gen-rail-floating {
+  position: absolute; inset-block-start: var(--gutter); inset-inline-start: var(--gutter); inset-block-end: var(--gutter);
+  width: var(--rail-floating); display: flex; flex-direction: column;
+  background: var(--color-bg-default); border: 1px solid var(--color-stroke-divider);
+  border-radius: var(--radius-xlarge); box-shadow: var(--shadow-100); overflow: hidden;
+}
+/* the floating card owns the start side of the canvas: its thumbnails fill three to a row and the
+ * bottom-start overlay (zoom) moves past it */
+.gen-rail-floating { --thumb-sm: 99px; }
+.gen-rail-floating ~ .gen-canvas-bottom { inset-inline-start: calc(var(--rail-floating) + var(--gutter) * 2); }
+
+/* below 960px the three regions stack: canvas first, then the rails, export stays pinned */
+@container (max-width: 959px) {
+  .gen-body { flex-direction: column; overflow-y: auto; }
+  .gen-canvas { order: -1; flex: none; height: var(--stage-h); }
+  .gen-rail, .gen-rail-params { width: auto; border: 0; border-top: 1px solid var(--color-stroke-default); }
+  .gen-rail-tools { flex-direction: row; padding: 0 var(--space-100); height: 56px; justify-content: space-around; }
+  /* the floating rail falls back to a normal block, so its canvas grows past the preview —
+     the bottom overlay then has to hold the bottom of the stage, not of the whole box */
+  .gen-canvas:has(.gen-rail-floating) { height: auto; overflow: visible; }
+  .gen-canvas:has(.gen-rail-floating) .gen-canvas-stage { position: static; min-height: var(--stage-h); }
+  .gen-canvas:has(.gen-rail-floating) .gen-canvas-bottom {
+    inset-block-start: calc(var(--stage-h) - var(--control-md) - var(--gutter)); inset-block-end: auto;
+  }
+  .gen-rail-floating { position: static; width: auto; border-radius: 0; box-shadow: none; border: 0; border-top: 1px solid var(--color-stroke-default); }
+  .gen-rail-floating ~ .gen-canvas-bottom { inset-inline-start: var(--gutter); }
+  .gen-rail-footer { position: sticky; inset-block-end: 0; background: var(--color-bg-subtlest); border-top: 1px solid var(--color-stroke-divider); }
+  /* no params rail: the export block lives on the canvas, so pin it to the region instead */
+  .gen-canvas-export { position: fixed; z-index: 3; }
+}
+
+/* ───────────────────────── 4. Components ───────────────────────── */
+/* buttons: 32 default, 40 for the one big call to action in a lead rail */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-75);
+  height: var(--control-md); padding: 0 var(--space-150);
+  font: var(--font-14-medium);
+  border-radius: var(--radius-medium); border: 1px solid transparent; white-space: nowrap;
+  transition: background-color var(--motion-fast) var(--motion-easing), border-color var(--motion-fast) var(--motion-easing), color var(--motion-fast) var(--motion-easing);
+}
+.btn-lg { height: var(--control-lg); padding: 0 var(--space-200); border-radius: var(--radius-large); }
+.btn-sm { height: var(--control-sm); padding: 0 var(--space-100); }
+.btn-block { width: 100%; }
+.btn-primary { background: var(--color-brand-default); color: var(--color-text-inverse); }
+.btn-primary:hover { background: var(--color-brand-hover); }
+.btn-primary:active { background: var(--color-brand-active); }
+.btn-secondary { background: var(--color-bg-default); color: var(--color-text-secondary); border-color: var(--color-stroke-default); }
+.btn-secondary:hover { border-color: var(--color-stroke-strong); background: var(--color-bg-hover); }
+.btn-ghost { color: var(--color-text-secondary); }
+.btn-ghost:hover { background: var(--color-bg-hover); }
+.btn-danger { background: var(--color-bg-default); color: var(--color-red-default); border-color: var(--color-stroke-default); }
+.btn:disabled, .btn[aria-disabled="true"] { background: var(--color-brand-disabled); color: var(--color-text-disabled); border-color: transparent; }
+.btn[aria-busy="true"] { color: transparent; position: relative; }
+.btn[aria-busy="true"] > * { visibility: hidden; } /* the label steps aside for the spinner */
+.btn[aria-busy="true"]::after {
+  content: ""; position: absolute; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent; color: var(--color-text-inverse);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* icon-only buttons: 32 square by default */
+.btn-icon { display: grid; place-items: center; width: var(--control-md); height: var(--control-md); padding: 0; color: var(--color-text-secondary); border-radius: var(--radius-large); background: var(--color-bg-default); }
+.btn-icon:hover { background: var(--color-bg-hover); }
+.btn-icon-sm { width: var(--control-mini); height: var(--control-mini); border-radius: var(--radius-small); }
+/* a plate button in a rail header: collapse the panel, or a chevron into a second level.
+ * It sits on the 24 step of the icon-only scale — the smallest one there is — with a 16px glyph. */
+.btn-plate {
+  width: var(--control-mini); height: var(--control-mini); display: grid; place-items: center; padding: 0;
+  background: var(--color-bg-surface); border-radius: var(--radius-small); color: var(--color-text-secondary);
+}
+.btn-plate:hover { background: var(--color-bg-active); }
+.btn-plate .icon { width: 16px; height: 16px; }
+/* the fabrication-tips button: a 32px capsule with a lightbulb and the word, white with a stroke-default
+ * border, in the canvas's top-end corner. Together with the switch track it is the only capsule. */
+.btn-tips {
+  display: inline-flex; align-items: center; gap: 2px; height: var(--control-md); padding: 0 10px 0 6px;
+  background: var(--color-bg-default); color: var(--color-text-secondary); border: 1px solid var(--color-stroke-default);
+  border-radius: var(--radius-circle); font: var(--font-14-medium);
+}
+.btn-tips:hover { border-color: var(--color-stroke-strong); background: var(--color-bg-hover); }
+
+/* input family: grey fill, no border; hover deepens the fill, focus draws a 1px stroke-active border */
+.input, .input-number, .select, .textarea {
+  display: inline-flex; align-items: center; gap: var(--space-50);
+  height: var(--input-h); padding: 0 var(--space-75);
+  background: var(--color-bg-control); color: var(--color-text-secondary);
+  border: 1px solid transparent; border-radius: var(--radius-medium);
+  font: var(--font-12-regular); font-variant-numeric: tabular-nums;
+  /* a measurement is one run: without this, RTL bidi renders "200 mm" as "mm 200" */
+  unicode-bidi: plaintext;
+  transition: background-color var(--motion-fast) var(--motion-easing), border-color var(--motion-fast) var(--motion-easing);
+}
+.input, .input-number { width: var(--input-w); }
+.input:hover, .input-number:hover, .select:hover { background: var(--color-bg-active); }
+.input:focus-visible, .input:focus-within, .input-number:focus-within, .select:focus-visible, .textarea:focus-within { border-color: var(--color-stroke-active); background: var(--color-bg-default); }
+.input::placeholder, .input-number input::placeholder, .textarea textarea::placeholder { color: var(--color-text-tertiary); }
+.input:disabled, .select:disabled, .input-number:has(input:disabled) { color: var(--color-text-disabled); background: var(--color-bg-subtlest); }
+.input[aria-invalid="true"], .input-number:has([aria-invalid="true"]) { border-color: var(--color-red-default); }
+
+/* a numeric field with a unit: the value starts at the field's start edge, the unit is pinned to the
+ * end and never moves. Value and unit are two elements, not one string — a unit inside the value
+ * travels with it (and reorders in RTL), so a column of fields loses its alignment. */
+.input-number > input {
+  /* align-self: stretch makes the input fill the field's 28px height; without it the input is only as
+   * tall as its line box, which shrinks the target to 16px and leaves the field's top and bottom edges dead. */
+  flex: 1; min-width: 0; align-self: stretch; padding: 0; border: 0; background: none; outline: none;
+  font: inherit; color: inherit; font-variant-numeric: tabular-nums;
+}
+.input-number > .unit {
+  flex: none; color: var(--color-text-tertiary);
+  font: var(--font-10-regular);
+}
+/* select: markup ships a native <select> (works with no script, and stays the value's source of
+ * truth); template.js upgrades it into the trigger and listbox styled below. */
+.select { width: var(--select-w); justify-content: space-between; }
+.select .icon { color: var(--color-text-tertiary); flex: none; transition: transform var(--motion-fast) var(--motion-easing); }
+.select[aria-expanded="true"] { background: var(--color-bg-default); border-color: var(--color-stroke-active); }
+.select[aria-expanded="true"] .icon { transform: rotate(180deg); }
+/* the no-script fallback: a native <select> draws its own arrow, so drop it and use the wrapper's */
+select.select { appearance: none; -webkit-appearance: none; padding-inline-end: 26px; }
+.select-field { position: relative; display: inline-flex; }
+.select-field > .icon { position: absolute; inset-inline-end: var(--space-75); top: 50%; margin-top: -8px; color: var(--color-text-tertiary); pointer-events: none; }
+
+/* the list: a floating surface, so it takes a border and a real shadow. Mounted on body with
+ * position:fixed in an app (a scrolling rail would clip it), absolute inside a docs demo. */
+.select-list {
+  min-width: var(--select-w); max-height: calc(var(--control-md) * 7 + var(--space-75) * 2);
+  padding: var(--space-75); overflow-y: auto; scrollbar-width: thin;
+  background: var(--color-bg-default); border: 1px solid var(--color-stroke-default);
+  border-radius: var(--radius-large); box-shadow: var(--shadow-200);
+}
+.select-option {
+  display: flex; align-items: center; gap: var(--space-100); white-space: nowrap;
+  height: var(--control-md); padding: 0 10px; border-radius: var(--radius-small);
+  color: var(--color-text-primary); font-size: 12px;
+}
+/* two orthogonal signals, each legible on its own — one fill doing both jobs says neither:
+ *   where you are  → the row fill (pointer and keyboard share it, so only ever one row is filled)
+ *   what is chosen → a brand-coloured checkmark plus 500 weight, which needs no fill */
+.select-option:hover, .select-option[data-active] { background: var(--color-bg-highlight); }
+.select-option[aria-selected="true"] { font-weight: 500; color: var(--color-text-primary); }
+.select-option .icon { margin-inline-start: auto; opacity: 0; color: var(--color-brand-default); }
+.select-option[aria-selected="true"] .icon { opacity: 1; }
+
+/* multi-line prompt box in a generate rail */
+.textarea { height: auto; min-height: 96px; align-items: stretch; flex-direction: column; padding: 10px var(--space-150); border-radius: var(--radius-large); }
+.textarea textarea { flex: 1; resize: none; border: 0; background: none; outline: none; padding: 0; line-height: 16px; }
+.textarea .counter { align-self: flex-end; color: var(--color-text-disabled); font-size: 12px; }
+
+/* colour swatch: a 24px plate that opens the picker */
+.swatch { position: relative; width: var(--control-mini); height: var(--control-mini); border-radius: var(--radius-medium); background: var(--color-bg-surface); border: 1px solid var(--color-stroke-divider); display: grid; place-items: center; }
+.swatch > i { display: block; width: 16px; height: 16px; border-radius: 3px; pointer-events: none; }
+/* the plate is a <label> around a real <input type="color"> */
+/* inset: -1px rather than 0: an absolutely positioned child resolves against the padding box, so the
+ * swatch's 1px border would trim the hit area from 24px to 22px — just under the minimum target. */
+.swatch input[type="color"] { position: absolute; inset: -1px; width: auto; height: auto; opacity: 0; padding: 0; border: 0; }
+
+/* switch: 36×20 track, 14px knob; the visible track and knob are decoration over a real checkbox */
+.switch { position: relative; display: inline-flex; width: var(--switch-w); height: var(--switch-h); flex: none; }
+/* The track is 20px by design, but it is only paint; the input beneath it is what receives the click,
+ * so it stretches to --min-target: the hit area clears the minimum and nothing looks different. */
+.switch input { position: absolute; inset-inline: 0; inset-block: calc((var(--switch-h) - var(--min-target)) / 2); margin: 0; opacity: 0; }
+.switch .track { position: absolute; inset: 0; border-radius: var(--radius-circle); background: var(--color-stroke-default); transition: background-color var(--motion-fast) var(--motion-easing); pointer-events: none; }
+.switch .knob { position: absolute; top: 3px; inset-inline-start: 3px; width: var(--switch-knob); height: var(--switch-knob); border-radius: var(--radius-circle); background: var(--color-bg-default); box-shadow: var(--shadow-100); transition: transform var(--motion-fast) var(--motion-easing); pointer-events: none; }
+.switch input:checked ~ .track { background: var(--color-brand-default); }
+.switch input:checked ~ .knob { transform: translateX(16px); }
+[dir="rtl"] .switch input:checked ~ .knob { transform: translateX(-16px); }
+.switch input:focus-visible ~ .track { outline: 2px solid var(--color-stroke-surround); outline-offset: 2px; }
+.switch input:disabled ~ .track { background: var(--color-bg-subtlest); border: 1px solid var(--color-stroke-divider); }
+
+/* slider: 3px track, 12px thumb with a 2px brand ring, the value always shown beside it */
+/* The 3px track and the 12px thumb are the visual sizes; the input itself grows to --min-target to be
+ * clickable, and an equal negative margin gives the extra height back — the field row's height is unchanged. */
+.slider { -webkit-appearance: none; appearance: none; width: var(--slider-w); height: var(--min-target); background: transparent;
+  margin: calc((var(--slider-thumb) - var(--min-target)) / 2) 0; }
+.slider::-webkit-slider-runnable-track { height: var(--slider-track); border-radius: var(--radius-circle); background: linear-gradient(to right, var(--color-brand-default) var(--fill, 40%), var(--color-track-off) var(--fill, 40%)); }
+.slider::-moz-range-track { height: var(--slider-track); border-radius: var(--radius-circle); background: var(--color-track-off); }
+.slider::-moz-range-progress { height: var(--slider-track); border-radius: var(--radius-circle); background: var(--color-brand-default); }
+.slider::-webkit-slider-thumb { -webkit-appearance: none; width: var(--slider-thumb); height: var(--slider-thumb); margin-top: -4.5px; border-radius: var(--radius-circle); background: var(--color-bg-default); border: 2px solid var(--color-brand-default); box-shadow: var(--shadow-100); }
+.slider::-moz-range-thumb { width: calc(var(--slider-thumb) - 4px); height: calc(var(--slider-thumb) - 4px); border-radius: var(--radius-circle); background: var(--color-bg-default); border: 2px solid var(--color-brand-default); box-shadow: var(--shadow-100); }
+[dir="rtl"] .slider::-webkit-slider-runnable-track { background: linear-gradient(to left, var(--color-brand-default) var(--fill, 40%), var(--color-track-off) var(--fill, 40%)); }
+.slider:disabled::-webkit-slider-runnable-track { background: var(--color-stroke-divider); }
+.slider:disabled::-webkit-slider-thumb { border-color: var(--color-stroke-default); background: var(--color-bg-subtlest); }
+
+/* segmented control: grey track 2px padding, white active item; also the canvas view tabs */
+.segmented { display: inline-flex; padding: 2px; height: var(--control-md); border-radius: var(--radius-medium); background: var(--color-bg-hover); }
+.segmented > button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 0 var(--space-100); min-width: 40px;
+  border-radius: var(--radius-small); color: var(--color-text-secondary);
+  font: var(--font-12-medium); transition: background-color var(--motion-fast) var(--motion-easing);
+}
+.segmented > button[aria-pressed="true"] { background: var(--color-bg-segmented-active); color: var(--color-text-primary); box-shadow: var(--shadow-100); }
+.segmented > button:disabled { color: var(--color-text-tertiary); }
+/* A 1×16 hairline between two adjacent inactive items; never beside the white active item, which divides on its own */
+.segmented > button + button::before { content: ''; position: absolute; inset-inline-start: -0.5px; top: 50%; translate: 0 -50%; width: 1px; height: 16px; background: var(--color-stroke-divider); }
+.segmented > button[aria-pressed="true"]::before,
+.segmented > button[aria-pressed="true"] + button::before { display: none; }
+.segmented-tabs > button { min-width: 88px; }
+
+/* property card: white, hairline border, 8px corners and a shadow-100 lift;
+ * header row is a disclosure button.
+ * The header's radius is 1px smaller than the card's: it sits inside the card's 1px border, so the hover fill hugs the inner edge. */
+.prop-card { background: var(--color-bg-default); border: 1px solid var(--color-stroke-divider);
+  border-radius: var(--radius-large); box-shadow: var(--shadow-100); }
+.prop-card-header {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: var(--space-100) var(--space-200); text-align: start;
+  font: var(--font-12-medium); color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-stroke-divider);
+  border-radius: calc(var(--radius-large) - 1px) calc(var(--radius-large) - 1px) var(--radius-none) var(--radius-none);
+}
+.prop-card-header .icon { color: var(--color-text-tertiary); transition: transform var(--motion-fast) var(--motion-easing); }
+/* 收起后 header 就是整张卡片，四角必须跟着卡片圆，否则 hover 底色的下两角会戳出卡片的圆角 */
+.prop-card-header[aria-expanded="false"] { border-bottom-color: transparent; border-radius: calc(var(--radius-large) - 1px); }
+.prop-card-header[aria-expanded="false"] .icon { transform: rotate(180deg); }
+.prop-card-header:hover { background: var(--color-bg-hover); }
+/* field row: label at the start, control at the end, 44px tall (28 control + 8/8 padding) */
+.field-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-150); padding: var(--space-100) var(--space-200); }
+.field-row > label, .field-row > .field-label { color: var(--color-text-primary); font: var(--font-12-regular); }
+.field-row .value { min-width: 36px; text-align: end; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; unicode-bidi: plaintext; }
+.field-row .control { display: flex; align-items: center; gap: var(--space-100); }
+.field-note { padding: 0 var(--space-200) var(--space-100); color: var(--color-text-tertiary); font: var(--font-12-regular); }
+
+/* thumbnails: template cards (140) and style tiles (90); selection = 2px brand ring, not colour alone */
+.thumb { display: flex; flex-direction: column; align-items: center; gap: var(--space-75); text-align: center; }
+.thumb-card {
+  position: relative; width: var(--thumb); height: var(--thumb); display: grid; place-items: center; padding: 14px;
+  background: var(--color-bg-default); border: 1px solid var(--color-stroke-divider); border-radius: var(--radius-large); box-shadow: var(--shadow-100);
+  transition: border-color var(--motion-fast) var(--motion-easing);
+}
+.thumb-card > * { width: 100%; height: 100%; border-radius: var(--radius-medium); object-fit: cover; }
+.thumb-sm .thumb-card { width: var(--thumb-sm); height: var(--thumb-sm); padding: 10px; box-shadow: none; }
+.thumb-round .thumb-card { padding: 12px; }
+.thumb-round .thumb-card > * { border-radius: var(--radius-circle); }
+/* Content decides the padding: an inline <svg> sits inset (14 on the large card, 10 on style and history
+ * tiles) while a photo <img> fills the tile. :has rather than a class, so any <img> bleeds without being tagged. */
+.thumb .thumb-card:has(> img) { padding: 0; }
+.thumb-card > img { border-radius: calc(var(--radius-large) - 1px); }
+.thumb:hover .thumb-card { border-color: var(--color-stroke-default); }
+/* The selection ring is a pseudo-element over the content: the border stays 1px and the content box never
+ * changes, so a photo or an SVG is not resized when it becomes selected */
+.thumb-card::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 2px transparent; transition: box-shadow var(--motion-fast) var(--motion-easing); }
+.thumb[aria-pressed="true"] .thumb-card, .thumb[aria-selected="true"] .thumb-card { border-color: var(--color-brand-default); }
+.thumb[aria-pressed="true"] .thumb-card::after, .thumb[aria-selected="true"] .thumb-card::after { box-shadow: inset 0 0 0 2px var(--color-brand-default); }
+.thumb-label { color: var(--color-text-secondary); font: var(--font-11-regular); }
+/* always two columns: the tracks split the rail evenly and the card caps at --thumb, so a
+ * scrollbar appearing shrinks the cards instead of pushing the second one onto its own row. */
+.thumb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-150) var(--space-100); padding: var(--space-150) var(--space-200); }
+.thumb-grid .thumb-card { width: 100%; max-width: var(--thumb); height: auto; aspect-ratio: 1; }
+.thumb-grid-sm { display: grid; grid-template-columns: repeat(3, var(--thumb-sm)); gap: var(--space-100); }
+
+/* section heading inside a lead rail ("Banknote · View all") */
+.rail-section { display: flex; flex-direction: column; gap: var(--space-100); }
+.rail-section-header { display: flex; align-items: center; justify-content: space-between; }
+.rail-section-title { display: flex; align-items: center; gap: var(--space-100); font: var(--font-12-medium); color: var(--color-text-primary); }
+.rail-section-title .plate { width: var(--control-mini); height: var(--control-mini); border-radius: var(--radius-small); background: var(--color-bg-control); display: grid; place-items: center; color: var(--color-text-secondary); }
+/* "View all" is 11px text, only 16px tall: block padding lifts the hit area to --min-target and an equal
+ * negative margin cancels it, so the row's layout is untouched. */
+.rail-section-more { display: inline-flex; align-items: center; gap: var(--space-50); color: var(--color-text-tertiary); font: var(--font-11-regular);
+  padding-block: calc((var(--min-target) - 16px) / 2); margin-block: calc((16px - var(--min-target)) / 2); }
+.rail-section-more:hover { color: var(--color-text-primary); }
+
+/* tool rail item (the 64px column in layout 5) */
+.rail-item { display: flex; flex-direction: column; align-items: center; gap: 5px; width: var(--rail-tools); color: var(--color-text-tertiary); font: var(--font-10-regular); }
+.rail-item .plate { width: var(--control-lg); height: var(--control-lg); display: grid; place-items: center; border-radius: var(--radius-large); transition: background-color var(--motion-fast) var(--motion-easing); }
+.rail-item:hover .plate { background: var(--color-bg-hover); }
+.rail-item[aria-pressed="true"] { color: var(--color-text-primary); font-weight: 500; }
+.rail-item[aria-pressed="true"] .plate { background: var(--color-brand-default); color: var(--color-text-inverse); }
+
+/* zoom cluster: four white 32px squares. The readout is a menu button — it shows the live zoom,
+ * which is a free value, and its menu offers a few levels as shortcuts into that range. */
+.zoom-cluster { display: inline-flex; gap: var(--space-50); }
+.zoom-cluster > * { position: relative; height: var(--control-md); min-width: var(--control-md); display: inline-flex; align-items: center; justify-content: center; padding: 0 var(--space-100); background: var(--color-bg-default); border-radius: var(--radius-large); color: var(--color-text-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.zoom-cluster > button:hover, .zoom-cluster > button[aria-expanded="true"] { background: var(--color-bg-hover); }
+/* the level menu hugs its content: --select-w exists so a select's list is never narrower than
+ * its trigger, and this menu has no such pairing */
+.select-list.zoom-menu { min-width: 0; }
+
+/* alerts: tint behind, solid on the icon, text stays primary */
+.alert { display: flex; align-items: center; gap: var(--space-100); padding: var(--space-150); border-radius: var(--radius-medium); font: var(--font-12-regular); color: var(--color-text-primary); }
+.alert .icon { flex: none; }
+.alert p { margin: 0; }
+.alert-info { background: var(--color-blue-subtlest); } .alert-info .icon { color: var(--color-blue-default); }
+.alert-success { background: var(--color-green-subtlest); } .alert-success .icon { color: var(--color-green-default); }
+.alert-warning { background: var(--color-warning-subtlest); } .alert-warning .icon { color: var(--color-warning-default); }
+.alert-error { background: var(--color-red-subtlest); } .alert-error .icon { color: var(--color-red-default); }
+
+/* material swatches (the "Surface" property card): the images come from the platform's material
+ * library — the template ships placeholders. Selection is a ring outside the tile, never a fill. */
+.material-grid { display: grid; grid-template-columns: repeat(4, 57px); gap: var(--space-100); padding: var(--space-150) var(--space-200); }
+.material { width: 57px; height: 57px; padding: 0; border-radius: var(--radius-small); overflow: hidden; background: var(--color-bg-control); border: 1px solid var(--color-stroke-divider); }
+.material > * { display: block; width: 100%; height: 100%; object-fit: cover; }
+.material:hover { border-color: var(--color-stroke-default); }
+.material[aria-pressed="true"] { outline: 2px solid var(--color-text-primary); outline-offset: 2px; }
+
+/* second-level view inside a lead rail (history, "View all"): a back row, then a grid of 90px tiles */
+.rail-back { display: inline-flex; align-items: center; gap: var(--space-50); height: var(--control-md); padding: 0 var(--space-100) 0 0; color: var(--color-text-primary); font: var(--font-14-medium); border-radius: var(--radius-medium); }
+.rail-back .icon { color: var(--color-text-tertiary); }
+.rail-back:hover { background: var(--color-bg-hover); }
+.history-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-100); }
+.history-item { position: relative; aspect-ratio: 1; padding: 10px; border-radius: var(--radius-large); overflow: hidden; background: var(--color-bg-default); border: 1px solid var(--color-stroke-divider); }
+.history-item:has(> img) { padding: 0; } /* Same rule as a thumbnail: an SVG sits inset 10, a photo fills the tile */
+.history-item > * { display: block; width: 100%; height: 100%; object-fit: cover; }
+.history-item:hover { border-color: var(--color-stroke-default); }
+/* As on a thumbnail, but overflow:hidden clips whatever passes the padding box, so inset 0: the 1px border plus a 1px inner ring reads as 2px */
+.history-item::after { content: ''; position: absolute; inset: 0; border-radius: calc(var(--radius-large) - 1px); pointer-events: none; box-shadow: inset 0 0 0 1px transparent; transition: box-shadow var(--motion-fast) var(--motion-easing); }
+.history-item[aria-pressed="true"], .history-item[aria-selected="true"] { border-color: var(--color-brand-default); }
+.history-item[aria-pressed="true"]::after, .history-item[aria-selected="true"]::after { box-shadow: inset 0 0 0 1px var(--color-brand-default); }
+.rail-footer-row { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: var(--space-150) var(--space-200); border-top: 1px solid var(--color-stroke-divider); color: var(--color-text-primary); font: var(--font-14-medium); text-align: start; }
+.rail-footer-row .icon { color: var(--color-text-tertiary); }
+.rail-footer-row:hover { background: var(--color-bg-hover); }
+
+/* the preview's three states. The artboard is a stand-in for whatever your generator draws; it scales
+ * with --zoom so the zoom cluster has something to act on. Computing is a stage name and a number,
+ * never an indefinite spinner. */
+.gen-artboard {
+  width: 320px; height: 200px; background: var(--color-bg-default); border: 1px solid var(--color-stroke-default);
+  border-radius: var(--radius-small); box-shadow: var(--shadow-100); display: grid; place-items: center; color: var(--color-text-tertiary);
+  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1)); transition: transform var(--motion-base) var(--motion-easing);
+}
+/* the wheel and a pinch change the zoom on every frame; the transition only belongs on a step */
+.gen-artboard[data-zooming] { transition: none; }
+.gen-artboard svg { width: 100%; height: 100%; }
+.gen-progress {
+  display: flex; align-items: center; gap: var(--space-150); width: 320px; padding: var(--space-150) var(--space-200);
+  background: var(--color-bg-default); border: 1px solid var(--color-stroke-divider); border-radius: var(--radius-large); box-shadow: var(--shadow-100);
+  font-size: 12px; color: var(--color-text-primary);
+}
+.gen-progress .stage { flex: 1; min-width: 0; }
+.gen-progress .value { color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+.gen-progress-bar { position: absolute; inset-inline: 0; inset-block-end: 0; height: 2px; background: var(--color-stroke-divider); overflow: hidden; border-radius: 0 0 var(--radius-large) var(--radius-large); }
+.gen-progress-bar > i { display: block; height: 100%; width: var(--progress, 0%); background: var(--color-brand-default); transition: width var(--motion-fast) linear; transform-origin: 0 50%; }
+.gen-progress { position: relative; overflow: hidden; }
+
+/* tooltip: the name of an icon-only control on the same dark plate as a toast, above the control.
+ * It carries aria-hidden — the control's own aria-label is what a screen reader reads. */
+.tooltip {
+  position: absolute; inset-block-end: calc(100% + var(--space-50)); inset-inline-start: 50%; translate: -50% 0;
+  height: var(--control-mini); padding: 0 var(--space-100); display: flex; align-items: center;
+  width: max-content; white-space: nowrap;
+  background: var(--color-text-primary); color: var(--color-text-inverse);
+  border-radius: var(--radius-medium); font-size: 12px; box-shadow: var(--shadow-200);
+  opacity: 0; pointer-events: none; transition: opacity var(--motion-fast) var(--motion-easing);
+}
+button:hover > .tooltip, button:focus-visible > .tooltip { opacity: 1; }
+
+/* toast: the last overlay layer. One line, bottom centre, gone in two seconds. */
+.toast {
+  position: fixed; inset-block-end: var(--gutter); inset-inline: 0; margin-inline: auto; width: max-content; max-width: calc(100% - 32px);
+  height: var(--control-md); padding: 0 var(--space-150); display: flex; align-items: center; z-index: 3;
+  background: var(--color-text-primary); color: var(--color-text-inverse); border-radius: var(--radius-medium);
+  font-size: 12px; box-shadow: var(--shadow-200);
+  opacity: 0; transform: translateY(6px); transition: opacity var(--motion-fast) var(--motion-easing), transform var(--motion-fast) var(--motion-easing);
+}
+.toast[data-show] { opacity: 1; transform: none; }
+
+/* dialog: native <dialog>, 480 wide, header / media / body / footer */
+.dialog { width: min(var(--dialog-w), calc(100% - 32px)); padding: 0; border: 0; border-radius: var(--radius-xlarge); overflow: hidden; background: var(--color-bg-default); color: var(--color-text-primary); box-shadow: var(--shadow-300); }
+.dialog::backdrop { background: var(--color-bg-overlay); }
+/* A column flex while open: once max-height meets the viewport only the body shrinks and scrolls, so the header and the footer buttons stay visible */
+.dialog[open] { display: flex; flex-direction: column; }
+.dialog-header, .dialog-media, .dialog-footer { flex: none; }
+.dialog-header { display: flex; align-items: center; gap: var(--space-100); padding: var(--space-200) var(--space-300); border-bottom: 1px solid var(--color-stroke-divider); font: var(--font-16-semibold); }
+.dialog-header .spacer { flex: 1; }
+.dialog-header > .icon { flex: none; color: var(--color-text-tertiary); }
+/* Screen-reader-only text: the Tips "1 / 3" position count, which the design does not show and the dots are aria-hidden */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.dialog-media { height: 267px; background: var(--color-bg-control); display: grid; place-items: center; color: var(--color-text-tertiary); }
+.dialog-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding: var(--space-150) var(--space-300); display: flex; flex-direction: column; gap: var(--space-100); }
+/* One slide = title + description, 8px apart; the gap belongs to the slide, not to .dialog-body —
+ * a slide is the body's direct child, so the body's gap falls between slides, never inside one. */
+.tip-slide { display: flex; flex-direction: column; gap: var(--space-100); }
+.dialog-body h3 { margin: 0; font: 500 14px / 20px var(--font-sans); color: var(--color-text-primary); }
+.dialog-body p { margin: 0; color: var(--color-text-secondary); font: var(--font-12-regular); }
+.dialog-footer { display: flex; align-items: center; gap: var(--space-100); padding: var(--space-200) var(--space-300) 18px; }
+.dialog-footer .spacer { flex: 1; }
+
+/* generate dialog (layout 4): the picked style rides in a dark header, then the two inputs that
+ * feed one generate call. The body keeps 16px gutters — 480px minus a 24px gutter leaves
+ * too little for a full-width drop target. */
+.dialog-generate .dialog-header {
+  align-items: flex-start; gap: 14px; /* [measured] Figma: thumbnail → title block in the header; not on the spacing scale */
+  padding: var(--space-200) var(--space-150) var(--space-150) var(--space-200);
+  border-bottom: 0; color: var(--color-text-inverse);
+  background: radial-gradient(circle at 18% 20%,
+    color-mix(in srgb, var(--color-bg-inverse) 82%, var(--color-text-inverse)) 0%,
+    var(--color-bg-inverse) 72%);
+}
+.dialog-generate .dialog-header .btn-icon { background: none; color: var(--color-text-inverse); }
+.dialog-generate .dialog-header .btn-icon:hover { background: var(--color-bg-inverse-subtle); }
+.dialog-generate .dialog-body { padding: var(--space-150) var(--space-200) var(--space-200); gap: var(--space-150); }
+.dialog-generate .dialog-footer { padding: 13px 18px; border-top: 1px solid var(--color-stroke-divider); } /* [measured] Figma 13/18 — the 18 is the same value as the Tips dialog's footer */
+.dialog-thumb { flex: none; width: 66px; height: 66px; padding: var(--space-100); border-radius: var(--radius-large); overflow: hidden; background: var(--color-bg-default); color: var(--color-text-primary); display: grid; place-items: center; }
+.dialog-thumb > * { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dialog-heading { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-100); }
+
+/* tag: a 20px read-only chip. On the dark dialog header it turns into a light film. */
+.tag-row { display: flex; flex-wrap: wrap; gap: var(--space-75); }
+.tag {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 var(--space-75);
+  border-radius: var(--radius-small); background: var(--color-bg-active); color: var(--color-text-secondary);
+  font: var(--font-10-medium);
+}
+.dialog-header .tag { background: var(--color-bg-inverse-subtle); color: var(--color-text-inverse); }
+
+/* form field: label above, control below — the only stacked layout in the system; panels put the
+ * label and the control on one row instead. */
+.form-field { display: flex; flex-direction: column; gap: var(--space-100); }
+.form-label { display: flex; align-items: center; gap: var(--space-50); color: var(--color-text-tertiary); font: var(--font-12-medium); }
+.form-label > em { font-style: normal; font-weight: 400; }
+.dots { display: inline-flex; align-items: center; gap: 5px; }
+.dots > i { width: 6px; height: 6px; border-radius: var(--radius-circle); background: var(--color-stroke-default); }
+.dots > i[aria-current] { width: 16px; border-radius: 3px; background: var(--color-text-primary); }
+
+/* export slot: the SDK renders the platform button here; the fallback inside is for local development */
+[data-atomm-export-button] {
+  --atomm-export-width: 100%;
+  --atomm-export-height: 32px;
+  --atomm-export-radius: 6px;
+  --atomm-export-bg: #292a2d;
+  --atomm-export-bg-hover: var(--color-brand-hover);
+  --atomm-export-bg-active: #171719;
+  --atomm-export-color: #ffffff;
+  --atomm-export-font-size: 14px;
+  display: block;
+}
