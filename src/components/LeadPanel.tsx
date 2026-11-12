@@ -87,7 +87,8 @@ function surprise(like = false) {
 function FrameIcon({ id }: { id: string }) {
   if (id === 'free') return <svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true"><path d={pathD(MOTIFS.find((m) => m.id === 'flower')!.shapes, 4)} fill="currentColor" /></svg>;
   const f = presetFrame(id, 1);
-  return <svg viewBox="-0.6 -0.6 1.2 1.2" aria-hidden="true"><path d={pathD(f.shapes, 4)} fill="none" stroke="currentColor" strokeWidth="0.07" strokeLinejoin="round" /><path d={pathD(f.shapes, 4)} fill="currentColor" opacity="0.18" /></svg>;
+  const far = Math.max(...f.shapes.flatMap((sh) => sh.outer.map((q) => Math.max(Math.abs(q.x), Math.abs(q.y))))) * 2.3;
+  return <svg viewBox={`${-far / 2} ${-far / 2} ${far} ${far}`} aria-hidden="true"><path d={pathD(f.shapes, 4)} fill="none" stroke="currentColor" strokeWidth="0.07" strokeLinejoin="round" /><path d={pathD(f.shapes, 4)} fill="currentColor" opacity="0.18" /></svg>;
 }
 
 function Templates() {
@@ -187,6 +188,13 @@ function Templates() {
 function addMotif(motif: string) {
   const { design, ui } = getState();
   const R = designR(design);
+  const fig = MOTIFS.find((m) => m.id === motif && m.figure);
+  if (fig) {
+    // a figure keeps its proportions and arrives as one centrepiece
+    const w = R * 1.2, a = fig.aspect ?? 1;
+    addElement(ring({ motif, op: ui.addOp, count: 1, radius: 0, width: +(a >= 1 ? w : w * a).toFixed(1), length: +(a >= 1 ? w / a : w).toFixed(1) }));
+    return;
+  }
   const count = 12, radius = R * 0.55, length = R * 0.24;
   const width = Math.min(((2 * Math.PI * radius) / count) * 0.8, length * 0.75);
   addElement(ring({ motif, op: ui.addOp, count, radius, length: +length.toFixed(1), width: +width.toFixed(1) }));
@@ -229,7 +237,7 @@ function Motifs() {
         <div className="thumb-grid-sm">
           {MOTIFS.map((m) => (
             <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
-              <span className="thumb-card"><ShapeThumb shapes={m.shapes} /></span><span className="thumb-label">{m.label}</span>
+              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label">{m.label}</span>
             </button>
           ))}
         </div>

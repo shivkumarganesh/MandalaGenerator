@@ -3,11 +3,15 @@
 // with the tip at y = -0.5 pointing AWAY from the mandala centre.
 import type { Pt, Ring, Shape } from './types';
 import { circleRing, difference, signedArea, union } from './geom';
+import { REINDEER_ASPECT, REINDEER_LINES, REINDEER_SOLID } from './reindeer';
 
 export interface MotifDef {
   id: string;
   label: string;
   shapes: Shape[];
+  /** Figures are pictures, not petals: they keep this width / height ratio and are added as a single centrepiece. */
+  aspect?: number;
+  figure?: boolean;
 }
 
 const bez = (p0: Pt, p1: Pt, p2: Pt, p3: Pt, n = 14): Ring => {
@@ -125,6 +129,16 @@ const defs: [string, string, () => Shape[]][] = [
   }],
 ];
 
-export const MOTIFS: MotifDef[] = defs.map(([id, label, f]) => ({ id, label, shapes: normalise(f()) }));
+const unpack = (data: number[][][]): Shape[] => data.map((rings) => {
+  const ring = (flat: number[]): Ring => { const r: Ring = []; for (let i = 0; i < flat.length; i += 2) r.push({ x: flat[i], y: flat[i + 1] }); return r; };
+  return { outer: ring(rings[0]), holes: rings.slice(1).map(ring) };
+});
+
+export const FIGURES: MotifDef[] = [
+  { id: 'reindeer', label: 'Reindeer', shapes: unpack(REINDEER_LINES), aspect: REINDEER_ASPECT, figure: true },
+  { id: 'reindeer-solid', label: 'Reindeer shape', shapes: unpack(REINDEER_SOLID), aspect: REINDEER_ASPECT, figure: true },
+];
+
+export const MOTIFS: MotifDef[] = [...defs.map(([id, label, f]) => ({ id, label, shapes: normalise(f()) })), ...FIGURES];
 const byId = new Map(MOTIFS.map((m) => [m.id, m]));
 export const builtinMotif = (id: string): MotifDef | undefined => byId.get(id);
