@@ -80,7 +80,7 @@ function surprise(like = false) {
     d = { ...d, finish: cur.finish, plateColor: cur.plateColor, layers: d.layers.map((l, i) => ({ ...l, color: cols[Math.min(i, cols.length - 1)] })) };
   }
   // finishing choices belong to the project, not to one roll of the dice
-  d = { ...d, holes: cur.holes, sheet: cur.sheet, minFeature: cur.minFeature, thickness: cur.thickness, kerf: cur.kerf };
+  d = { ...d, holes: cur.holes, sheet: cur.sheet, minFeature: cur.minFeature, thickness: cur.thickness, kerf: cur.kerf, loop: d.theme === 'christmas' ? cur.loop : undefined };
   loadGenerated(d);
 }
 

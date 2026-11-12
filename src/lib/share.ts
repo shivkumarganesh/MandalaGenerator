@@ -53,6 +53,8 @@ export function parseDesign(text: string): Design | null {
       : null;
     return {
       frame,
+      theme: d.theme === 'christmas' ? 'christmas' : undefined,
+      loop: d.loop ? true : undefined,
       holes: d.holes ? { centre: num(d.holes.centre, 0, 0, 100), hang: num(d.holes.hang, 0, 0, 30), pins: !!d.holes.pins } : undefined,
       minFeature: d.minFeature === undefined ? undefined : num(d.minFeature, 1.2, 0.1, 10),
       sheet: d.sheet ? { w: num(d.sheet.w, 0, 0, 3000), h: num(d.sheet.h, 0, 0, 3000), price: num(d.sheet.price, 0, 0, 100000), speed: num(d.sheet.speed, 10, 0.1, 2000) } : undefined,

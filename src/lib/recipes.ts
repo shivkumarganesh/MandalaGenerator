@@ -446,7 +446,7 @@ export function generate(seed: number, style?: Style, paletteId?: string, layers
   if (xv && !paletteId) paletteId = XMAS_PALETTE[xv][Math.floor(rnd() * XMAS_PALETTE[xv].length)];
   const built = CURVE_STYLES.includes(st) ? curveStyle(st, rnd, count) : xv ? christmas(xv, rnd, count) : FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
   const pal = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[Math.floor(rnd() * PALETTES.length)];
-  const d: Design = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala', gen: { style: st } };
+  const d: Design = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala', gen: { style: st }, ...(st === 'christmas' ? { theme: 'christmas' } : {}) };
   return colourGenerated(d, pal);
 }
 
@@ -513,4 +513,4 @@ export const TEMPLATES: Template[] = [
 ];
 
 /** The free-form part of a template; lib/frame.templateDesign adds its shape, if it has one. */
-export const fromTemplate = (t: Template, layers?: number): Design => ({ ...generate(t.seed, t.style, t.palette, layers ?? t.layers, t.variant), name: t.label, ...(t.hang ? { holes: { centre: 0, hang: t.hang, pins: false } } : {}) });
+export const fromTemplate = (t: Template, layers?: number): Design => ({ ...generate(t.seed, t.style, t.palette, layers ?? t.layers, t.variant), name: t.label, ...(t.group === 'Christmas' ? { theme: 'christmas' } : {}), ...(t.hang ? { holes: { centre: 0, hang: t.hang, pins: false } } : {}) });

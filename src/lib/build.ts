@@ -142,6 +142,24 @@ function plateShapes(d: Design, footprint: Shape[]): Shape[] {
   }
 }
 
+/** The y of the sheet's edge straight above the centre (smaller y = higher on the page). */
+function topEdge(shapes: Shape[]): number {
+  const bb = bbox(shapes);
+  if (!bb) return 0;
+  const band = Math.max(2, (bb.maxX - bb.minX) * 0.03);
+  let top = Infinity;
+  for (const s of shapes) for (const p of s.outer) if (Math.abs(p.x) < band && p.y < top) top = p.y;
+  return top === Infinity ? bb.minY : top;
+}
+
+/** Ornament loop for the bottom sheet: a round tab overlapping the top edge, and the hole through it. */
+export function loopShapes(base: Shape[]): { tab: Shape[]; hole: Shape[] } | null {
+  if (!base.length) return null;
+  const r = Math.min(9, Math.max(4, shapesFar(base) * 0.065));
+  const cy = topEdge(base) - r * 0.45; // sits mostly above the edge, with enough overlap to be strong
+  return { tab: [{ outer: circleRing(r, 40, 0, cy), holes: [] }], hole: [{ outer: circleRing(r * 0.42, 28, 0, cy - r * 0.08), holes: [] }] };
+}
+
 function holeShapes(d: Design, stack: BuiltLayer[]): Shape[] {
   const h = d.holes;
   if (!h || !stack.length) return [];
@@ -151,10 +169,7 @@ function holeShapes(d: Design, stack: BuiltLayer[]): Shape[] {
     const bb = bbox(stack[0].shapes);
     if (bb) {
       // straight above the centre, a few mm inside the bottom sheet's top edge
-      const band = Math.max(2, (bb.maxX - bb.minX) * 0.03);
-      let top = Infinity;
-      for (const s of stack[0].shapes) for (const p of s.outer) if (Math.abs(p.x) < band && p.y < top) top = p.y;
-      if (top === Infinity) top = bb.minY;
+      const top = topEdge(stack[0].shapes);
       out.push({ outer: circleRing(h.hang / 2, 28, 0, top + h.hang / 2 + Math.max(3, h.hang)), holes: [] });
     }
   }
@@ -205,6 +220,10 @@ export function buildStack(d: Design): BuiltLayer[] {
   // through-holes go through every sheet
   const holes = holeShapes(d, out);
   if (holes.length) for (const l of out) { l.shapes = difference(l.shapes, holes); l.own = difference(l.own, holes); }
+  if (d.loop && out.length) {
+    const lp = loopShapes(out[0].shapes);
+    if (lp) { out[0].shapes = difference(union([...out[0].shapes, ...lp.tab]), lp.hole); out[0].own = difference(union([...out[0].own, ...lp.tab]), lp.hole); }
+  }
   // engraving only exists where the sheet is visible material
   out.forEach((l, i) => { if (l.score.length) l.score = intersect(l.score, i < out.length - 1 ? difference(l.shapes, out[i + 1].shapes) : l.shapes); });
   stackCache.set(d, out);

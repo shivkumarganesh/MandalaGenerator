@@ -101,6 +101,19 @@ for (const d0 of designs) {
   const back = parseDesign(JSON.stringify({ ...eng, holes: { centre: 8, hang: 4, pins: true }, sheet: { w: 400, h: 400, price: 5, speed: 10 }, minFeature: 1 }))!;
   check(back.holes?.centre === 8 && back.sheet?.w === 400 && back.minFeature === 1 && back.layers[0].elements.some((e) => e.op === 'score'), 'new settings must survive a project round-trip');
 }
+// ornament loop: optional, Christmas only, bottom sheet only
+for (const t of TEMPLATES.filter((x) => x.group === 'Christmas')) {
+  const d = templateDesign(t);
+  check(d.theme === 'christmas' && !d.loop, `${t.label}: should be a Christmas design with the loop off by default`);
+  const plain = buildStack(d), looped = buildStack({ ...d, loop: true });
+  const topOf = (s: typeof plain) => Math.min(...s[0].shapes.flatMap((p) => p.outer.map((q) => q.y)));
+  check(looped[0].shapes.length === plain[0].shapes.length, `${t.label}: the loop must be attached to the bottom sheet, not a loose piece`);
+  check(topOf(looped) < topOf(plain) - 1.5 || area(looped[0].shapes) !== area(plain[0].shapes), `${t.label}: loop should change the bottom sheet`);
+  check(looped[0].shapes.some((p) => p.holes.length > plain[0].shapes.reduce((m, q) => Math.max(m, q.holes.length), 0) - 1 && p.holes.length >= 1), `${t.label}: loop needs a hole`);
+  check(looped.slice(1).every((l, i) => Math.abs(area(l.shapes) - area(plain[i + 1].shapes)) < 0.01), `${t.label}: loop must not alter the upper sheets`);
+  check(!validate(looped, 1.2, d.solidStack).some((x) => x.level === 'error'), `${t.label}: loop causes blocking issues`);
+}
+check(!templateDesign(TEMPLATES.find((x) => !x.group)!).theme, 'non-Christmas templates must not get the Christmas theme');
 check(TEMPLATES.length >= 20 && new Set(TEMPLATES.map((t) => t.id)).size === TEMPLATES.length, 'expected 20+ unique templates');
 // every style, many seeds: no two designs alike, none broken
 for (const st of STYLES) {

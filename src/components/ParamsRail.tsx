@@ -216,9 +216,15 @@ function Finishing() {
   const set = (p: Partial<typeof h>) => patchDesign({ holes: { ...h, ...p } }, 'holes');
   const [note, setNote] = useState('');
   return (
-    <Card title="Make it a…" defaultOpen={false}>
+    <Card key={design.theme ?? 'plain'} title="Make it a…" defaultOpen={design.theme === 'christmas'}>
       <Apply label="Product" prompt="Choose…" options={PRODUCTS} onPick={(id) => { const p = PRODUCTS.find((x) => x.id === id)!; setDesign((d) => applyProduct(d, p)); setNote(p.note); }} />
       {note && <Note>{note}</Note>}
+      {design.theme === 'christmas' && (
+        <>
+          <Switch label="Ornament loop on top" checked={!!design.loop} onChange={(v) => patchDesign({ loop: v })} />
+          <Note>Adds a small tab with a hole to the top of the bottom sheet, for a ribbon or hook. Christmas designs only.</Note>
+        </>
+      )}
       <Num label="Centre hole" value={h.centre} min={0} max={60} step={0.5} onChange={(v) => set({ centre: v })} />
       <Num label="Hanging hole" value={h.hang} min={0} max={20} step={0.2} onChange={(v) => set({ hang: v })} />
       <Switch label="Alignment pin holes" checked={h.pins} onChange={(v) => set({ pins: v })} />

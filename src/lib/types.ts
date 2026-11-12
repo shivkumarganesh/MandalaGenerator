@@ -110,6 +110,9 @@ export interface Design {
   sheet?: { w: number; h: number; price: number; speed: number };
   /** How the design was generated, so "More like this" can make a sibling. */
   gen?: { style: string };
+  theme?: string; // 'christmas' unlocks seasonal options
+  /** Ornament loop: a tab with a hole added to the top of the bottom sheet, for a ribbon or hook. */
+  loop?: boolean;
 }
 
 export interface Frame {

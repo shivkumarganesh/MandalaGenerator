@@ -35,7 +35,7 @@ function initialDesign(): Design {
       if (d && d.v === 2 && Array.isArray(d.layers)) return d;
     }
   } catch { /* storage unavailable — start fresh */ }
-  return fromTemplate(TEMPLATES[0]);
+  return fromTemplate(TEMPLATES.find((t) => t.id === 'f-lotus') ?? TEMPLATES[0]); // a non-seasonal design to open on
 }
 
 const first = initialDesign();
