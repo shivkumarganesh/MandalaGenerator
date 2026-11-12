@@ -1,5 +1,6 @@
 // Starting points: palettes, a seeded mandala generator ("Surprise me") and the template list.
 // Templates are just fixed (style, seed, palette) triples, so every thumbnail is the real thing.
+import { builtinMotif } from './motifs';
 import type { CurveEl, Design, DiscEl, EdgeStyle, Element, Layer, RingEl } from './types';
 
 let idCounter = 0;
@@ -269,9 +270,11 @@ function filigree(style: Style, rnd: () => number, count?: number): Layer[] {
 
 // ── Christmas ───────────────────────────────────────────────────────────────
 
-export const XMAS_VARIANTS = ['snowflake', 'wreath', 'trees', 'poinsettia', 'bells', 'star', 'reindeer'] as const;
+export const XMAS_FIGURES = ['reindeer', 'santa', 'snowman', 'gingerbread', 'stocking', 'bell-art'] as const;
+export const XMAS_VARIANTS = ['snowflake', 'wreath', 'trees', 'poinsettia', 'bells', 'star', ...XMAS_FIGURES] as const;
 export type XmasVariant = (typeof XMAS_VARIANTS)[number];
-const XMAS_PALETTE: Record<XmasVariant, string[]> = {
+const XMAS_PALETTE: Record<string, string[]> = {
+  santa: ['christmas', 'nordic'], snowman: ['frost', 'christmas'], gingerbread: ['terracotta', 'christmas', 'wood'], stocking: ['christmas', 'nordic'], 'bell-art': ['christmas', 'nordic', 'frost'],
   snowflake: ['frost'], wreath: ['christmas'], trees: ['christmas', 'forest', 'frost'], poinsettia: ['christmas'], bells: ['christmas', 'nordic'], star: ['christmas', 'frost', 'nordic'], reindeer: ['christmas', 'frost', 'nordic'],
 };
 
@@ -337,16 +340,18 @@ function christmas(variant: XmasVariant, rnd: () => number, count?: number): Lay
       add(els);
     }
     add([ring({ motif: 'sparkle', count: 1, radius: 0, length: R * 0.34, width: R * 0.34 }), ring({ motif: 'circle', count: n, radius: R * 0.66, length: R * 0.07, width: R * 0.07, rotate: 180 / n })]);
-  } else if (variant === 'reindeer') {
-    // a leaping reindeer on a starry medallion: border layers, then the silhouette, then its pen lines
-    const n = pick([10, 12, 16]), star = pick(['sparkle', 'star', 'snowarm']), W = R * j(1.5, 0.05), H = W / 1.208;
+  } else if ((XMAS_FIGURES as readonly string[]).includes(variant)) {
+    // a figure on a starry medallion: border layers, then the silhouette, then its pen lines
+    const aspect = builtinMotif(variant)?.aspect ?? 1;
+    // sized so the picture's box sits inside the border (the reindeer's corners are empty, so it can go larger)
+    const n = pick([10, 12, 16]), star = pick(['sparkle', 'star', 'snowarm']), W = variant === 'reindeer' ? R * j(1.5, 0.05) : (R * j(1.62, 0.03) * aspect) / Math.hypot(aspect, 1), H = W / aspect;
     add([disc({ outer: R * 0.97, edge: 'scallop', lobes: n * 2, depth: R * 0.03 })]);
     for (let k = 0; k < L - 3; k++) {
       const inner = R * (0.8 - 0.05 * k);
       add([disc({ outer: R * (0.93 - 0.03 * k), inner }), ring({ op: 'cut', motif: k % 2 ? 'circle' : star, count: n * (k % 2 ? 2 : 1), radius: (R * (0.93 - 0.03 * k) + inner) / 2, length: R * (k % 2 ? 0.04 : 0.085), width: R * (k % 2 ? 0.04 : 0.085), rotate: k % 2 ? 0 : 180 / n })]);
     }
-    add([ring({ motif: 'reindeer-solid', count: 1, radius: 0, length: H, width: W })]);
-    add([ring({ motif: 'reindeer', count: 1, radius: 0, length: H, width: W })]);
+    add([ring({ motif: variant + '-solid', count: 1, radius: 0, length: H, width: W })]);
+    add([ring({ motif: variant, count: 1, radius: 0, length: H, width: W })]);
   } else {
     // star of Bethlehem: nested, counter-turned sparkle stars over a halo
     const turn = j(22.5, 0.2);
@@ -457,6 +462,11 @@ export const TEMPLATES: Template[] = [
   { id: 'x-bells', label: 'Jingle bells', style: 'christmas', variant: 'bells', seed: 35, palette: 'christmas', layers: 4, group: 'Christmas' },
   { id: 'x-star', label: 'Christmas star', style: 'christmas', variant: 'star', seed: 36, palette: 'christmas', layers: 5, group: 'Christmas' },
   { id: 'x-deer', label: 'Leaping reindeer', style: 'christmas', variant: 'reindeer', seed: 37, palette: 'christmas', layers: 5, group: 'Christmas' },
+  { id: 'x-santa', label: 'Santa', style: 'christmas', variant: 'santa', seed: 51, palette: 'christmas', layers: 5, group: 'Christmas' },
+  { id: 'x-snowman', label: 'Snowman', style: 'christmas', variant: 'snowman', seed: 52, palette: 'frost', layers: 5, group: 'Christmas' },
+  { id: 'x-ginger', label: 'Gingerbread', style: 'christmas', variant: 'gingerbread', seed: 53, palette: 'terracotta', layers: 5, group: 'Christmas' },
+  { id: 'x-stocking', label: 'Stocking', style: 'christmas', variant: 'stocking', seed: 54, palette: 'christmas', layers: 5, group: 'Christmas' },
+  { id: 'x-hollybell', label: 'Holly bell', style: 'christmas', variant: 'bell-art', seed: 55, palette: 'nordic', layers: 5, group: 'Christmas' },
   { id: 'x-tree', label: 'Tree ornament', style: 'filigree', seed: 207, palette: 'christmas', shape: 'tree', layers: 4, group: 'Christmas', hang: 3 },
   { id: 'x-bauble', label: 'Bauble', style: 'starlace', seed: 312, palette: 'christmas', shape: 'bauble', layers: 4, group: 'Christmas', hang: 3 },
   { id: 'x-frost', label: 'Frost window', style: 'starlace', seed: 319, palette: 'frost', shape: 'circle', layers: 5, group: 'Christmas' },

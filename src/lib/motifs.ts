@@ -4,6 +4,7 @@
 import type { Pt, Ring, Shape } from './types';
 import { circleRing, difference, signedArea, union } from './geom';
 import { REINDEER_ASPECT, REINDEER_LINES, REINDEER_SOLID } from './reindeer';
+import { FIGURE_DATA } from './figureData';
 
 export interface MotifDef {
   id: string;
@@ -134,9 +135,15 @@ const unpack = (data: number[][][]): Shape[] => data.map((rings) => {
   return { outer: ring(rings[0]), holes: rings.slice(1).map(ring) };
 });
 
+const FIGURE_LABELS: Record<string, string> = { santa: 'Santa', 'bell-art': 'Holly bell', gingerbread: 'Gingerbread', snowman: 'Snowman', stocking: 'Stocking' };
+
 export const FIGURES: MotifDef[] = [
   { id: 'reindeer', label: 'Reindeer', shapes: unpack(REINDEER_LINES), aspect: REINDEER_ASPECT, figure: true },
   { id: 'reindeer-solid', label: 'Reindeer shape', shapes: unpack(REINDEER_SOLID), aspect: REINDEER_ASPECT, figure: true },
+  ...Object.entries(FIGURE_DATA).flatMap(([id, f]) => [
+    { id, label: FIGURE_LABELS[id] ?? id, shapes: unpack(f.lines), aspect: f.aspect, figure: true },
+    { id: id + '-solid', label: (FIGURE_LABELS[id] ?? id) + ' shape', shapes: unpack(f.solid), aspect: f.aspect, figure: true },
+  ]),
 ];
 
 export const MOTIFS: MotifDef[] = [...defs.map(([id, label, f]) => ({ id, label, shapes: normalise(f()) })), ...FIGURES];

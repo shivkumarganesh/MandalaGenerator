@@ -235,12 +235,23 @@ function Motifs() {
       <div className="rail-section">
         <h4>Motif rings</h4>
         <div className="thumb-grid-sm">
-          {MOTIFS.map((m) => (
+          {MOTIFS.filter((m) => !m.figure).map((m) => (
             <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
-              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label">{m.label}</span>
+              <span className="thumb-card"><ShapeThumb shapes={m.shapes} /></span><span className="thumb-label">{m.label}</span>
             </button>
           ))}
         </div>
+      </div>
+      <div className="rail-section">
+        <h4>Christmas figures</h4>
+        <div className="thumb-grid-sm">
+          {MOTIFS.filter((m) => m.figure).map((m) => (
+            <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
+              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label clip">{m.label}</span>
+            </button>
+          ))}
+        </div>
+        <p className="field-note flush">Each figure comes as a line drawing and as a filled shape. Put the shape on one layer and the drawing on the layer above.</p>
       </div>
       <div className="rail-section">
         <h4>Discs &amp; bands</h4>
