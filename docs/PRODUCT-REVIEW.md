@@ -8,7 +8,7 @@ result was long, and the 10-persona analysis found:
 
 | Finding in the old app | What the rebuild does |
 |---|---|
-| **P0** 12-second rebuild with 5 dense motifs + mount + bridges | Designs are parameters, not imported point clouds. Slowest stack build across 80 test designs: **under 50 ms**. Imported art is simplified and capped at 6 000 points. |
+| **P0** 12-second rebuild with 5 dense motifs + mount + bridges | Designs are parameters, not imported point clouds. Slowest stack build across 80 test designs: **under 100 ms**. Imported art is simplified and capped at 6 000 points. |
 | **P1** 12-fold + mirror default produced 24 copies nobody chose | Every ring shows its count ("12 × Petal") and Count is a field. The brush panel states the copy count ("repeats 24×") before you draw. |
 | **P2** Importer path untested (malformed SVG) | Import is rewritten: sanitised, `<use>` inlined, filled *and* stroke-only art, open paths reported instead of silently dropped; hostile project JSON is clamped. |
 | **P2** Extra click after every Duplicate | Duplicate selects the copy (and only Duplicate does — a fresh placement from the library also selects, because you nearly always tune it next; brush strokes do not). |
