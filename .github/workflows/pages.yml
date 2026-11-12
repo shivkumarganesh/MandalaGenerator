@@ -29,6 +29,8 @@ jobs:
       - run: npm test
       - run: npm run build:standalone
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true # switches Pages on if the token is allowed to; otherwise enable it in Settings → Pages
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist-standalone
