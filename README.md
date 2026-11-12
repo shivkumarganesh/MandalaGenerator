@@ -47,10 +47,12 @@ npm test
 npm run release
 ```
 
+The source entry page is `app.html` (the dev server opens it). The `index.html` at the repository root is the **built** standalone app, refreshed by `npm run release`, so GitHub Pages can serve the repository directly.
+
 `npm run release` type-checks, builds both targets (`dist-atomm/`, `dist-standalone/`) and refreshes `release/`.
 
 To try the Atomm build inside the real platform iframe:
-`https://www.atomm.com/creativetools/community/generator/<name>?local=http://localhost:5173/` with `npm run dev:atomm` running.
+`https://www.atomm.com/creativetools/community/generator/<name>?local=http://localhost:5173/app.html` with `npm run dev:atomm` running.
 
 ## How it is built
 

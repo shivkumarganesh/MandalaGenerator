@@ -5,6 +5,7 @@ import JSZip from 'jszip';
 
 mkdirSync('release', { recursive: true });
 copyFileSync('dist-standalone/index.html', 'release/mandala-stack-studio.html');
+copyFileSync('dist-standalone/index.html', 'index.html'); // what GitHub Pages serves from the repository root
 
 const zip = new JSZip();
 const walk = (dir) => readdirSync(dir).forEach((f) => {

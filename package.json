@@ -4,12 +4,12 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:atomm": "VITE_TARGET=atomm vite",
+    "dev": "vite --open /app.html",
+    "dev:atomm": "VITE_TARGET=atomm vite --open /app.html",
     "typecheck": "tsc --noEmit",
     "test": "tsx scripts/pipeline-test.ts",
-    "build:atomm": "tsc --noEmit && VITE_TARGET=atomm vite build",
-    "build:standalone": "tsc --noEmit && VITE_TARGET=standalone vite build",
+    "build:atomm": "tsc --noEmit && VITE_TARGET=atomm vite build && node scripts/rename-entry.mjs dist-atomm",
+    "build:standalone": "tsc --noEmit && VITE_TARGET=standalone vite build && node scripts/rename-entry.mjs dist-standalone",
     "build": "npm run build:atomm && npm run build:standalone",
     "release": "npm run build && node scripts/package-release.mjs"
   },

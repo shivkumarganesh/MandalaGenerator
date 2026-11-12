@@ -24,7 +24,10 @@ export default defineConfig({
   base: './',
   define: { 'import.meta.env.VITE_TARGET': JSON.stringify(target) },
   plugins: [react(), atommSdk(), ...(target === 'standalone' ? [viteSingleFile()] : [])],
+  // The source entry is app.html: the repository root index.html is the BUILT standalone app,
+  // so GitHub Pages works even in "deploy from a branch" mode. Builds rename app.html → index.html.
   build: {
+    rollupOptions: { input: 'app.html' },
     outDir: target === 'atomm' ? 'dist-atomm' : 'dist-standalone',
     chunkSizeWarningLimit: 1500,
   },
