@@ -165,16 +165,20 @@ function Templates() {
             ))}
           </div>
         </div>
-        <h4>Templates ({TEMPLATES.length})</h4>
       </div>
-      <div className="thumb-grid" role="listbox" aria-label="Templates">
-        {TEMPLATES.map((t) => (
-          <button key={t.id} type="button" className="thumb" role="option" aria-selected={design.name === t.label} onClick={() => loadDesign(templateDesign(t, genLayers || undefined))}>
-            <span className="thumb-card"><svg viewBox={templatePaths(t).box} aria-hidden="true">{templatePaths(t).paths.map((p, i) => <path key={i} d={p.d} fill={p.color} fillRule="evenodd" />)}</svg></span>
-            <span className="thumb-label">{t.label}</span>
-          </button>
-        ))}
-      </div>
+      {[['Christmas', TEMPLATES.filter((t) => t.group === 'Christmas')], ['All styles', TEMPLATES.filter((t) => !t.group)]].map(([title, list]) => (
+        <div key={title as string}>
+          <div className="gen-rail-content"><h4>{title as string} ({(list as Template[]).length})</h4></div>
+          <div className="thumb-grid" role="listbox" aria-label={`${title} templates`}>
+            {(list as Template[]).map((t) => (
+              <button key={t.id} type="button" className="thumb" role="option" aria-selected={design.name === t.label} onClick={() => loadDesign(templateDesign(t, genLayers || undefined))}>
+                <span className="thumb-card"><svg viewBox={templatePaths(t).box} aria-hidden="true">{templatePaths(t).paths.map((p, i) => <path key={i} d={p.d} fill={p.color} fillRule="evenodd" />)}</svg></span>
+                <span className="thumb-label">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
     </>
   );
 }

@@ -24,6 +24,9 @@ export const PRESET_FRAMES: { id: string; label: string; motif: string; aspect: 
   { id: 'heart', label: 'Heart', motif: 'heart', aspect: 1.08 },
   { id: 'star', label: 'Star', motif: 'star', aspect: 1 },
   { id: 'teardrop', label: 'Drop', motif: 'teardrop', aspect: 0.72 },
+  { id: 'tree', label: 'Fir tree', motif: 'tree', aspect: 0.8 },
+  { id: 'bauble', label: 'Bauble', motif: 'bauble', aspect: 0.86 },
+  { id: 'bell', label: 'Bell', motif: 'bell', aspect: 0.92 },
 ];
 
 /** A built-in outline with a border on every layer (the stepped picture-frame look). */

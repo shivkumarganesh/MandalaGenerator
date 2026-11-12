@@ -2,7 +2,7 @@
 // to track) and normalised into a unit box centred on the origin: x across, y along the radius,
 // with the tip at y = -0.5 pointing AWAY from the mandala centre.
 import type { Pt, Ring, Shape } from './types';
-import { circleRing, difference, signedArea } from './geom';
+import { circleRing, difference, signedArea, union } from './geom';
 
 export interface MotifDef {
   id: string;
@@ -109,6 +109,18 @@ const defs: [string, string, () => Shape[]][] = [
       const bend = 0.35 * ((1 - y) / 2) ** 2 * 1; // curl the tip sideways
       r.push({ x: Math.sin(t) * Math.sin(t / 2) ** 1.4 * 0.62 + (y < 0 ? bend * (-y) * 2.2 : 0), y });
     }
+    return one(r);
+  }],
+  // ── festive ──
+  ['tree', 'Fir tree', () => one(sym([P(0, 0.5), P(0.09, 0.5), P(0.09, 0.38), P(0.5, 0.38), P(0.16, 0.08), P(0.34, 0.08), P(0.1, -0.2), P(0.22, -0.2)], P(0, -0.5)))],
+  ['holly', 'Holly', () => one(sym([P(0, 0.5), P(0.3, 0.36), P(0.2, 0.24), P(0.48, 0.1), P(0.3, -0.02), P(0.5, -0.16), P(0.26, -0.26), P(0.3, -0.4)], P(0, -0.5)))],
+  ['bell', 'Bell', () => one(sym([P(0, 0.5), P(0.12, 0.44), P(0.12, 0.38), P(0.5, 0.38), P(0.5, 0.3), ...bez(P(0.5, 0.3), P(0.3, 0.1), P(0.36, -0.4), P(0.08, -0.42), 16).slice(1), P(0.08, -0.42), P(0.08, -0.5)], P(0, -0.5)))],
+  ['snowarm', 'Snow branch', () => one(sym([P(0, 0.5), P(0.05, 0.5), P(0.05, 0.26), P(0.46, -0.05), P(0.4, -0.14), P(0.05, 0.1), P(0.05, -0.08), P(0.36, -0.34), P(0.3, -0.42), P(0.05, -0.22), P(0.05, -0.44)], P(0, -0.5)))],
+  ['bauble', 'Bauble', () => union([...one(circleRing(0.42, 48, 0, 0.08)), ...one([P(-0.11, -0.5), P(0.11, -0.5), P(0.11, -0.3), P(-0.11, -0.3)])])],
+  ['sparkle', 'Sparkle', () => {
+    const r: Ring = [];
+    const pat = [1, 0.26, 0.5, 0.26];
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2; r.push({ x: pat[i % 4] * Math.sin(a), y: -pat[i % 4] * Math.cos(a) }); }
     return one(r);
   }],
 ];

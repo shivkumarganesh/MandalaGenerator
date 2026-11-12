@@ -16,6 +16,9 @@ export const PALETTES: Palette[] = [
   { id: 'berry', label: 'Berry', colors: ['#2b1338', '#5b1f6b', '#a0318c', '#dd5a9a', '#f6a3b7', '#fde3e3'] },
   { id: 'peacock', label: 'Peacock', colors: ['#12263a', '#0f6d7a', '#12a594', '#f2c14e', '#f78154', '#fbf3d5'] },
   { id: 'terracotta', label: 'Terracotta', colors: ['#3a2a25', '#8c3b2a', '#c65d3b', '#e39b5d', '#f0cf9a', '#f9efdc'] },
+  { id: 'christmas', label: 'Christmas', colors: ['#16321f', '#2f6b45', '#9c1b25', '#c8323a', '#d9a441', '#fbf1d8'] },
+  { id: 'frost', label: 'Frost', colors: ['#0d2640', '#1f4f7a', '#5c9bc4', '#a8d3ea', '#e3f2fa', '#ffffff'] },
+  { id: 'nordic', label: 'Nordic red', colors: ['#6b101b', '#a51c27', '#f3ece0', '#c8323a', '#fff9f0', '#a51c27'] },
   { id: 'mono', label: 'Monochrome', colors: ['#1c1c1f', '#3d3e42', '#6f7177', '#a5a7ad', '#d6d8db', '#f6f6f7'] },
 ];
 
@@ -28,7 +31,7 @@ function mix(a: string, b: string, t: number): string {
 /** n colours, bottom → top, spread across the palette ramp. */
 export function paletteColors(p: Palette, n: number): string[] {
   if (n <= 1) return [p.colors[2]];
-  if (p.id === 'walnut') return Array.from({ length: n }, (_, i) => p.colors[i % p.colors.length]);
+  if (p.id === 'walnut' || p.id === 'nordic') return Array.from({ length: n }, (_, i) => p.colors[i % p.colors.length]);
   return Array.from({ length: n }, (_, i) => {
     const x = (i / (n - 1)) * (p.colors.length - 1);
     const k = Math.min(p.colors.length - 2, Math.floor(x));
@@ -44,6 +47,12 @@ export function applyPalette(d: Design, p: Palette): Design {
     plateColor: mix(cols[0], '#000000', 0.35),
     layers: d.layers.map((l, i) => ({ ...l, color: cols[i] })),
   };
+}
+
+/** First colouring of a generated design: layers the generator already coloured keep their colour. */
+function colourGenerated(d: Design, p: Palette): Design {
+  const done = applyPalette(d, p);
+  return { ...done, layers: done.layers.map((l, i) => (d.layers[i].color === '#cccccc' ? l : { ...l, color: d.layers[i].color })) };
 }
 
 export const ring = (o: Partial<RingEl> & Pick<RingEl, 'motif' | 'count' | 'radius' | 'length' | 'width'>): RingEl => ({
@@ -73,8 +82,8 @@ function mulberry32(a: number) {
   };
 }
 
-export type Style = 'filigree' | 'swirl' | 'gothic' | 'starlace' | 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
-export const STYLES: Style[] = ['filigree', 'swirl', 'gothic', 'starlace', 'lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
+export type Style = 'christmas' | 'filigree' | 'swirl' | 'gothic' | 'starlace' | 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
+export const STYLES: Style[] = ['christmas', 'filigree', 'swirl', 'gothic', 'starlace', 'lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
 
 interface TierCfg {
   folds: number[]; layers: [number, number];
@@ -178,7 +187,7 @@ function windows(style: Style, rnd: () => number, count?: number): Layer[] {
 }
 
 export const STYLE_LABELS: Record<Style, string> = {
-  filigree: 'Filigree lotus', swirl: 'Swirl', gothic: 'Gothic tracery', starlace: 'Star lace',
+  christmas: 'Christmas', filigree: 'Filigree lotus', swirl: 'Swirl', gothic: 'Gothic tracery', starlace: 'Star lace',
   lotus: 'Lotus tiers', sunburst: 'Sunburst', dahlia: 'Dahlia', lace: 'Lace', rosewindow: 'Rose window',
   snowflake: 'Snowflake', compass: 'Compass', hearts: 'Hearts', aztec: 'Aztec', bloom: 'Bloom',
 };
@@ -256,24 +265,124 @@ function filigree(style: Style, rnd: () => number, count?: number): Layer[] {
   return out;
 }
 
+// ── Christmas ───────────────────────────────────────────────────────────────
+
+export const XMAS_VARIANTS = ['snowflake', 'wreath', 'trees', 'poinsettia', 'bells', 'star'] as const;
+export type XmasVariant = (typeof XMAS_VARIANTS)[number];
+const XMAS_PALETTE: Record<XmasVariant, string[]> = {
+  snowflake: ['frost'], wreath: ['christmas'], trees: ['christmas', 'forest', 'frost'], poinsettia: ['christmas'], bells: ['christmas', 'nordic'], star: ['christmas', 'frost', 'nordic'],
+};
+
+/** Festive designs built from the seasonal motifs. Every proportion is jittered by the seed. */
+function christmas(variant: XmasVariant, rnd: () => number, count?: number): Layer[] {
+  const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
+  const j = (v: number, amt = 0.1) => v * (1 - amt + rnd() * amt * 2);
+  const L = Math.max(3, count ?? 4 + Math.floor(rnd() * 2));
+  const out: Layer[] = [];
+  // a colour given here is kept; '#cccccc' layers take the palette
+  const add = (els: Element[], color = '#cccccc') => out.push(layer(`Layer ${out.length + 1}`, color, els));
+  const GREENS = ['#16321f', '#24553a', '#2f6b45', '#3f8a57', '#56a06a', '#74b584'];
+
+  if (variant === 'snowflake') {
+    const fat = j(0.62), hub = j(0.3);
+    for (let k = 0; k < L - 1; k++) {
+      const s = 1 - 0.72 * (k / Math.max(1, L - 2));
+      const len = R * 0.96 * s;
+      const rot = k % 2 ? 30 : 0;
+      const els: Element[] = [ring({ motif: 'snowarm', count: 6, radius: len / 2 + R * 0.03, length: len, width: len * fat, rotate: rot }), disc({ outer: len * hub, edge: 'pointed', lobes: 6, depth: len * 0.07, rotate: rot })];
+      if (k === 0) els.push(ring({ motif: 'diamond', count: 6, radius: R * 0.46, length: R * 0.2, width: R * 0.11, rotate: 30 }));
+      if (k > 0 && len * hub > 14) els.push(ring({ op: 'cut', motif: 'diamond', count: 6, radius: len * hub * 0.6, length: len * hub * 0.34, width: len * hub * 0.2, rotate: rot + 30 }));
+      add(els);
+    }
+    add([ring({ motif: 'sparkle', count: 1, radius: 0, length: R * 0.26, width: R * 0.26 }), ring({ op: 'cut', motif: 'circle', count: 1, radius: 0, length: R * 0.06, width: R * 0.06 })]);
+  } else if (variant === 'wreath') {
+    const n = pick([14, 16, 18]), mid = R * j(0.74, 0.03);
+    const pitch = (2 * Math.PI * mid) / n;
+    add([disc({ outer: R * 0.97, inner: R * 0.5, edge: 'scallop', lobes: n, depth: R * 0.04 })], GREENS[0]);
+    for (let k = 0; k < L - 2; k++) {
+      // a garland: leaves lie along the ring, each layer half a leaf round and leaning the other way
+      const half = k % 2 === 1, sc = 1 - 0.08 * k, lean = half ? 62 : 118;
+      add([disc({ outer: mid + R * 0.05, inner: mid - R * 0.05 }), ring({ motif: 'holly', count: n, radius: mid + (half ? -1 : 1) * R * 0.03, length: pitch * 1.7 * sc, width: R * 0.17 * sc, rotate: half ? 180 / n : 0, spin: lean })], GREENS[Math.min(5, 2 + k)]);
+    }
+    add([ring({ motif: 'circle', count: n / 2, radius: mid + R * 0.03, length: R * 0.085, width: R * 0.085 }), ring({ motif: 'circle', count: n / 2, radius: mid - R * 0.05, length: R * 0.07, width: R * 0.07, rotate: 360 / n }), ring({ motif: 'bell', count: 1, radius: mid * 0.98, length: R * 0.3, width: R * 0.24, rotate: 180, spin: 180 })], '#c8323a');
+  } else if (variant === 'trees') {
+    const n = pick([6, 8, 10]), shrink = j(0.74, 0.05);
+    for (let k = 0; k < L - 1; k++) {
+      const s = Math.pow(shrink, k), core = R * 0.5 * s, len = R * 0.52 * s;
+      const pitch = (2 * Math.PI * (core + len * 0.4)) / n;
+      const rot = k % 2 ? 180 / n : 0;
+      const els: Element[] = [disc({ outer: core, edge: 'plain' }), ring({ motif: 'tree', count: n, radius: core + len * 0.42, length: len, width: Math.min(pitch * 0.95, len * 0.9), rotate: rot })];
+      if (k < L - 2 && core > 22) els.push(ring({ op: 'cut', motif: 'star', count: n, radius: core * 0.86, length: core * 0.16, width: core * 0.16, rotate: rot + 180 / n }));
+      add(els, GREENS[Math.min(5, k + (k > 0 ? 1 : 0))]);
+    }
+    add([ring({ motif: 'star', count: 1, radius: 0, length: R * 0.3, width: R * 0.3 }), ring({ op: 'cut', motif: 'circle', count: 1, radius: 0, length: R * 0.06, width: R * 0.06 })], '#d9a441');
+  } else if (variant === 'poinsettia') {
+    const n = pick([6, 7, 8]), slim = j(0.42);
+    add([ring({ motif: 'holly', count: n, radius: R * 0.56, length: R * 0.86, width: R * 0.36, rotate: 180 / n }), disc({ outer: R * 0.32 })]);
+    for (let k = 0; k < L - 2; k++) {
+      const len = R * (0.92 - (0.5 * k) / Math.max(1, L - 3));
+      add([ring({ motif: 'leaf', count: n, radius: len * 0.5, length: len, width: len * slim, rotate: k % 2 ? 180 / n : 0 }), disc({ outer: len * 0.2 })]);
+    }
+    add([disc({ outer: R * 0.11 }), ring({ op: 'cut', motif: 'circle', count: 6, radius: R * 0.065, length: R * 0.034, width: R * 0.034 }), ring({ motif: 'circle', count: n, radius: R * 0.15, length: R * 0.055, width: R * 0.055 })]);
+  } else if (variant === 'bells') {
+    const n = pick([5, 6, 8]);
+    add([disc({ outer: R * 0.96, edge: 'scallop', lobes: n * 2, depth: R * 0.05 })]);
+    for (let k = 0; k < L - 2; k++) {
+      const s = 1 - 0.14 * k;
+      const els: Element[] = [ring({ motif: 'bell', count: n, radius: R * 0.57, length: R * 0.5 * s, width: R * 0.4 * s, spin: 180 }), disc({ outer: R * 0.3 * s })];
+      if (k === 0) els.push(ring({ motif: 'holly', count: n, radius: R * 0.66, length: R * 0.34, width: R * 0.17, rotate: 180 / n }));
+      else els.push(ring({ op: 'cut', motif: 'circle', count: n, radius: R * 0.69, length: R * 0.07 * s, width: R * 0.07 * s }));
+      add(els);
+    }
+    add([ring({ motif: 'sparkle', count: 1, radius: 0, length: R * 0.34, width: R * 0.34 }), ring({ motif: 'circle', count: n, radius: R * 0.66, length: R * 0.07, width: R * 0.07, rotate: 180 / n })]);
+  } else {
+    // star of Bethlehem: nested, counter-turned sparkle stars over a halo
+    const turn = j(22.5, 0.2);
+    add([disc({ outer: R * 0.7, edge: 'pointed', lobes: 16, depth: R * 0.08 }), ring({ motif: 'sparkle', count: 1, radius: 0, length: R * 2, width: R * 2 })]);
+    for (let k = 1; k < L; k++) {
+      const s = 1 - 0.78 * (k / (L - 1)) * 0.9;
+      const els: Element[] = [ring({ motif: 'sparkle', count: 1, radius: 0, length: R * 1.9 * s, width: R * 1.9 * s, rotate: k % 2 ? turn : 0 })];
+      if (k === 1) els.push(ring({ op: 'cut', motif: 'star', count: 8, radius: R * 0.3, length: R * 0.07, width: R * 0.07, rotate: 22.5 }));
+      add(els);
+    }
+  }
+  return out;
+}
+
 const FILIGREE: Style[] = ['filigree', 'swirl', 'gothic', 'starlace'];
 
 /** `layers` fixes the number of sheets (2–10); leave it out to let the style decide. */
-export function generate(seed: number, style?: Style, paletteId?: string, layers?: number): Design {
+export function generate(seed: number, style?: Style, paletteId?: string, layers?: number, variant?: string): Design {
   const count = layers ? Math.min(10, Math.max(2, Math.round(layers))) : undefined;
   const rnd = mulberry32(seed * 7919 + 13);
   const st = style ?? STYLES[Math.floor(rnd() * STYLES.length)];
   const cfg = TIERS[st];
-  const built = FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
+  const xv = st === 'christmas' ? ((XMAS_VARIANTS as readonly string[]).includes(variant ?? '') ? (variant as XmasVariant) : XMAS_VARIANTS[Math.floor(rnd() * XMAS_VARIANTS.length)]) : null;
+  if (xv && !paletteId) paletteId = XMAS_PALETTE[xv][Math.floor(rnd() * XMAS_PALETTE[xv].length)];
+  const built = xv ? christmas(xv, rnd, count) : FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
   const pal = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[Math.floor(rnd() * PALETTES.length)];
   const d: Design = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala', gen: { style: st } };
-  return applyPalette(d, pal);
+  return colourGenerated(d, pal);
 }
 
-export interface Template { id: string; label: string; style: Style; seed: number; palette: string; shape?: string; layers?: number }
+export interface Template { id: string; label: string; style: Style; seed: number; palette: string; shape?: string; layers?: number; variant?: string; group?: string; hang?: number }
 
 // 26 starting points: the open line-work styles in every format first, then the solid-tier classics.
 export const TEMPLATES: Template[] = [
+  // Christmas
+  { id: 'x-snow', label: 'Snow crystal', style: 'christmas', variant: 'snowflake', seed: 31, palette: 'frost', layers: 5, group: 'Christmas' },
+  { id: 'x-wreath', label: 'Holly wreath', style: 'christmas', variant: 'wreath', seed: 32, palette: 'christmas', layers: 5, group: 'Christmas' },
+  { id: 'x-trees', label: 'Fir tree ring', style: 'christmas', variant: 'trees', seed: 33, palette: 'christmas', layers: 5, group: 'Christmas' },
+  { id: 'x-poin', label: 'Poinsettia', style: 'christmas', variant: 'poinsettia', seed: 34, palette: 'christmas', layers: 5, group: 'Christmas' },
+  { id: 'x-bells', label: 'Jingle bells', style: 'christmas', variant: 'bells', seed: 35, palette: 'christmas', layers: 4, group: 'Christmas' },
+  { id: 'x-star', label: 'Christmas star', style: 'christmas', variant: 'star', seed: 36, palette: 'christmas', layers: 5, group: 'Christmas' },
+  { id: 'x-tree', label: 'Tree ornament', style: 'filigree', seed: 207, palette: 'christmas', shape: 'tree', layers: 4, group: 'Christmas', hang: 3 },
+  { id: 'x-bauble', label: 'Bauble', style: 'starlace', seed: 312, palette: 'christmas', shape: 'bauble', layers: 4, group: 'Christmas', hang: 3 },
+  { id: 'x-frost', label: 'Frost window', style: 'starlace', seed: 319, palette: 'frost', shape: 'circle', layers: 5, group: 'Christmas' },
+  { id: 'x-nordic', label: 'Nordic tile', style: 'starlace', seed: 326, palette: 'nordic', shape: 'square', layers: 5, group: 'Christmas' },
+  { id: 'x-mint', label: 'Peppermint', style: 'swirl', seed: 249, palette: 'nordic', shape: 'circle', layers: 4, group: 'Christmas' },
+  { id: 'x-bellp', label: 'Bell ornament', style: 'gothic', seed: 284, palette: 'christmas', shape: 'bell', layers: 4, group: 'Christmas', hang: 3 },
+  // line-work and classics
   { id: 'f-lotus', label: 'Filigree lotus', style: 'filigree', seed: 207, palette: 'forest', layers: 6 },
   { id: 'f-rose', label: 'Rose lattice', style: 'filigree', seed: 200, palette: 'berry', layers: 6 },
   { id: 'f-round', label: 'Round panel', style: 'filigree', seed: 214, palette: 'ocean', shape: 'circle', layers: 6 },
@@ -303,4 +412,4 @@ export const TEMPLATES: Template[] = [
 ];
 
 /** The free-form part of a template; lib/frame.templateDesign adds its shape, if it has one. */
-export const fromTemplate = (t: Template, layers?: number): Design => ({ ...generate(t.seed, t.style, t.palette, layers ?? t.layers), name: t.label });
+export const fromTemplate = (t: Template, layers?: number): Design => ({ ...generate(t.seed, t.style, t.palette, layers ?? t.layers, t.variant), name: t.label, ...(t.hang ? { holes: { centre: 0, hang: t.hang, pins: false } } : {}) });
