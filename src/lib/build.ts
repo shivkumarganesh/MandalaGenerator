@@ -135,14 +135,20 @@ export function buildStack(d: Design): BuiltLayer[] {
   const hit = stackCache.get(d);
   if (hit) return hit;
   const vis = d.layers.map((l, i) => ({ l, i })).filter((x) => x.l.visible);
-  const own = vis.map((x) => layerShapes(x.l, d.customMotifs));
+  let own = vis.map((x) => layerShapes(x.l, d.customMotifs));
+  const frame = d.frame?.shapes.length ? d.frame : null;
+  // inside a frame every layer is clipped to the outline, stepping in a little more each tier
+  // (crumbs under 1 mm² left at sharp corners are dropped — they cannot be cut or glued)
+  if (frame) own = own.map((s, k) => intersect(s, offset(frame.shapes, -frame.step * (k + 1))).filter((p) => shapeArea(p) >= 1));
   const final: Shape[][] = own.slice();
   if (d.solidStack) {
     // top-down: every sheet also carries the footprint of everything above it
     for (let i = final.length - 2; i >= 0; i--) final[i] = union([...final[i], ...final[i + 1]]);
   }
   const out: BuiltLayer[] = [];
-  if (d.plate !== 'none' && final.length) {
+  if (frame) {
+    out.push({ id: 'plate', name: frame.name || 'Shape', color: d.plateColor, shapes: frame.shapes, own: frame.shapes, isPlate: true, srcIndex: -1 });
+  } else if (d.plate !== 'none' && final.length) {
     const footprint = d.solidStack ? final[0] : union(final.flat());
     const p = plateShapes(d, footprint);
     if (p.length) out.push({ id: 'plate', name: 'Backplate', color: d.plateColor, shapes: p, own: p, isPlate: true, srcIndex: -1 });
@@ -192,7 +198,7 @@ export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser): I
     for (const piece of L.shapes) {
       const a = shapeArea(piece);
       const contact = area(intersect([piece], below.shapes));
-      if (contact < 0.5) floating++;
+      if (contact < Math.min(0.5, a * 0.5)) floating++;
       else if (contact < a * 0.35) weak++;
     }
     if (floating)
@@ -229,10 +235,18 @@ export function scaleDesign(d: Design, k: number): Design {
     if (e.kind === 'disc') return { ...e, outer: e.outer * k, inner: e.inner * k, depth: e.depth * k };
     return { ...e, size: e.size * k, pts: e.pts.map((p) => [p[0] * k, p[1] * k, ...p.slice(2)]) };
   };
-  return { ...d, layers: d.layers.map((l) => ({ ...l, elements: l.elements.map(el) })) };
+  const frame = d.frame ? { ...d.frame, step: d.frame.step, shapes: mapShapes(d.frame.shapes, (p) => ({ x: p.x * k, y: p.y * k })) } : d.frame;
+  return { ...d, frame, layers: d.layers.map((l) => ({ ...l, elements: l.elements.map(el) })) };
+}
+
+export function shapesFar(shapes: Shape[]): number {
+  let far = 0;
+  for (const s of shapes) for (const p of s.outer) far = Math.max(far, Math.hypot(p.x, p.y));
+  return far;
 }
 
 export function designDiameter(d: Design): number {
+  if (d.frame?.shapes.length) return shapesFar(d.frame.shapes) * 2;
   let far = 0;
   for (const l of d.layers)
     for (const s of layerShapes(l, d.customMotifs)) for (const p of s.outer) far = Math.max(far, Math.hypot(p.x, p.y));

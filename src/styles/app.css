@@ -91,3 +91,8 @@
 @container (max-width: 959px) {
   .gen-rail-tools { height: auto; padding: var(--space-100); }
 }
+
+/* a file input dressed as a secondary button */
+.file-btn { position: relative; cursor: pointer; font: var(--font-12-medium); }
+.file-btn input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.gen-rail-content .segmented > button { min-width: 0; }

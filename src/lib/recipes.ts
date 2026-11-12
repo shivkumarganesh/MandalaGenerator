@@ -94,10 +94,11 @@ const TIERS: Partial<Record<Style, TierCfg>> = {
 
 const R = 100; // generated at Ø200 mm; "Design size" rescales everything
 
-function tiers(style: Style, cfg: TierCfg, rnd: () => number): Layer[] {
+function tiers(style: Style, cfg: TierCfg, rnd: () => number, count?: number): Layer[] {
   const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
   const n0 = pick(cfg.folds);
-  const L = cfg.layers[0] + Math.floor(rnd() * (cfg.layers[1] - cfg.layers[0] + 1));
+  const auto = cfg.layers[0] + Math.floor(rnd() * (cfg.layers[1] - cfg.layers[0] + 1));
+  const L = count ?? auto;
   const motif = pick(cfg.motifs);
   const lf = cfg.lf * (0.9 + rnd() * 0.2);
   const out: Layer[] = [];
@@ -142,7 +143,7 @@ function tiers(style: Style, cfg: TierCfg, rnd: () => number): Layer[] {
 }
 
 /** "Window" mandalas: stacked discs, each with a ring of cut-outs that shows the sheet below. */
-function windows(style: Style, rnd: () => number): Layer[] {
+function windows(style: Style, rnd: () => number, count?: number): Layer[] {
   const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
   const cfg = style === 'rosewindow'
     ? { folds: [8, 12], cut: ['arch', 'petal'], edge: ['plain', 'scallop'] as EdgeStyle[], fill: 0.7 }
@@ -150,7 +151,8 @@ function windows(style: Style, rnd: () => number): Layer[] {
       ? { folds: [8, 12, 16], cut: ['triangle', 'kite', 'square'], edge: ['zigzag', 'pointed'] as EdgeStyle[], fill: 0.6 }
       : { folds: [10, 12, 16], cut: ['teardrop', 'leaf', 'lotus'], edge: ['scallop', 'wave'] as EdgeStyle[], fill: 0.62 };
   const n = pick(cfg.folds);
-  const L = 4 + Math.floor(rnd() * 2);
+  const auto = 4 + Math.floor(rnd() * 2);
+  const L = count ?? auto;
   const edge = pick(cfg.edge);
   const out: Layer[] = [];
   const T = (k: number) => R * (1 - 0.8 * (k / L));
@@ -174,13 +176,15 @@ function windows(style: Style, rnd: () => number): Layer[] {
   return out;
 }
 
-export function generate(seed: number, style?: Style, paletteId?: string): Design {
+/** `layers` fixes the number of sheets (2–10); leave it out to let the style decide. */
+export function generate(seed: number, style?: Style, paletteId?: string, layers?: number): Design {
+  const count = layers ? Math.min(10, Math.max(2, Math.round(layers))) : undefined;
   const rnd = mulberry32(seed * 7919 + 13);
   const st = style ?? STYLES[Math.floor(rnd() * STYLES.length)];
   const cfg = TIERS[st];
-  const layers = cfg ? tiers(st, cfg, rnd) : windows(st, rnd);
+  const built = cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
   const pal = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[Math.floor(rnd() * PALETTES.length)];
-  const d = { ...emptyDesign(), layers, name: st[0].toUpperCase() + st.slice(1) + ' mandala' };
+  const d = { ...emptyDesign(), layers: built, name: st[0].toUpperCase() + st.slice(1) + ' mandala' };
   return applyPalette(d, pal);
 }
 

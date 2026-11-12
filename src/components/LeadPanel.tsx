@@ -10,6 +10,8 @@ import { download, previewSvg, slugName, svgToPng } from '../lib/exportLaser';
 import { encodeDesign, parseDesign } from '../lib/share';
 import { IS_ATOMM } from '../lib/atomm';
 import { addElement, getState, loadDesign, patchDesign, setDesign, setUI, toast, useStore, type Tool } from '../lib/store';
+import { fitToFrame, makeFrame, presetFrame, PRESET_FRAMES } from '../lib/frame';
+import { MOTIFS as ALL_MOTIFS } from '../lib/motifs';
 import { Alert, Icon, Segmented, Slider } from './ui';
 
 const TITLES: Record<Tool, string> = { templates: 'Start', motifs: 'Motifs', draw: 'Draw', import: 'Import', project: 'Project' };
@@ -48,15 +50,62 @@ function OpToggle() {
 /** Half the current design, or a sensible default for an empty canvas. */
 const designR = (d: Design) => designDiameter(d) / 2 || 100;
 
+const LAYER_CHOICES = [0, 3, 4, 5, 6, 7, 8];
+
+/** Load a generated design, keeping the shape the user is working inside (if any). */
+function loadGenerated(d: Design) {
+  loadDesign(fitToFrame(d, getState().design.frame));
+}
+
 function Templates() {
   const design = useStore((s) => s.design);
-  const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1e6));
+  const genLayers = useStore((s) => s.ui.genLayers);
+  const [err, setErr] = useState<string | null>(null);
+  const size = () => { const d = getState().design; return designDiameter(d) || 200; };
+  const setFrame = (f: ReturnType<typeof presetFrame> | null) => {
+    setDesign((d) => fitToFrame(d.layers.length ? d : generate(Date.now() % 1e6, undefined, undefined, getState().ui.genLayers || undefined), f));
+  };
+  async function onShapeFile(f: File | undefined) {
+    if (!f) return;
+    setErr(null);
+    try {
+      if (!/\.svg$/i.test(f.name) && f.type !== 'image/svg+xml') throw new Error('Upload the shape as an SVG file.');
+      const { motif } = importSvg(await f.text(), f.name);
+      setFrame(makeFrame(motif.shapes, motif.aspect, size(), motif.name));
+      toast('Mandala fitted inside your shape');
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not read that shape.'); }
+  }
   return (
     <>
       <div className="gen-rail-content">
-        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => { const s = seed + 1; setSeed(s); loadDesign(generate(s)); }}>
+        <div className="rail-section">
+          <h4>Layers per design</h4>
+          <Segmented label="Layers per design" value={String(genLayers)} onChange={(v) => setUI({ genLayers: +v })}
+            options={LAYER_CHOICES.map((n) => ({ id: String(n), label: n ? String(n) : 'Any' }))} />
+        </div>
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => loadGenerated(generate(Math.floor(Math.random() * 2 ** 31), undefined, undefined, genLayers || undefined))}>
           <Icon name="sparkle" />Surprise me
         </button>
+        <p className="field-note flush">Every press is a new design{genLayers ? ` with ${genLayers} layers` : ''}{design.frame ? `, grown inside your ${design.frame.name.toLowerCase()}` : ''}. Undo brings the last one back.</p>
+        <div className="rail-section">
+          <h4>Grow it inside a shape</h4>
+          <div className="thumb-grid-sm">
+            <button type="button" className="thumb thumb-sm" aria-pressed={!design.frame} onClick={() => setFrame(null)}>
+              <span className="thumb-card"><svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true"><circle r="0.42" fill="none" stroke="currentColor" strokeWidth="0.05" strokeDasharray="0.1 0.08" /></svg></span><span className="thumb-label">Free</span>
+            </button>
+            {PRESET_FRAMES.map((f) => (
+              <button key={f.id} type="button" className="thumb thumb-sm" aria-pressed={design.frame?.name === ALL_MOTIFS.find((m) => m.id === f.id)?.label} onClick={() => setFrame(presetFrame(f.id, size()))}>
+                <span className="thumb-card"><ShapeThumb shapes={presetFrame(f.id, 1).shapes} box={1.2} /></span><span className="thumb-label">{f.label}</span>
+              </button>
+            ))}
+          </div>
+          <label className="btn btn-secondary btn-block file-btn">
+            <Icon name="upload" />Upload your own shape (SVG)
+            <input type="file" accept=".svg,image/svg+xml" aria-label="Shape outline file" onChange={(e) => { onShapeFile(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
+          {design.frame && !PRESET_FRAMES.some((f) => ALL_MOTIFS.find((m) => m.id === f.id)?.label === design.frame!.name) && <p className="field-note flush">Growing inside “{design.frame.name}”.</p>}
+          {err && <Alert kind="error">{err}</Alert>}
+        </div>
         <div className="rail-section">
           <h4>Colours</h4>
           <div className="palette-grid" role="group" aria-label="Colour palette">
@@ -71,7 +120,7 @@ function Templates() {
       </div>
       <div className="thumb-grid" role="listbox" aria-label="Templates">
         {TEMPLATES.map((t) => (
-          <button key={t.id} type="button" className="thumb" role="option" aria-selected={design.name === t.label + ' mandala'} onClick={() => loadDesign(fromTemplate(t))}>
+          <button key={t.id} type="button" className="thumb" role="option" aria-selected={design.name === t.label + ' mandala'} onClick={() => loadGenerated(genLayers ? { ...generate(t.seed, t.style, t.palette, genLayers), name: t.label + ' mandala' } : fromTemplate(t))}>
             <span className="thumb-card"><svg viewBox="-104 -104 208 208" aria-hidden="true">{templatePaths(t).map((p, i) => <path key={i} d={p.d} fill={p.color} fillRule="evenodd" />)}</svg></span>
             <span className="thumb-label">{t.label}</span>
           </button>

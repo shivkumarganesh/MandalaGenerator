@@ -46,7 +46,12 @@ export function parseDesign(text: string): Design | null {
       id: String(m.id ?? 'c' + i), name: String(m.name ?? 'Artwork').slice(0, 40), aspect: num(m.aspect, 1, 0.01, 100),
       shapes: (Array.isArray(m.shapes) ? m.shapes : []).slice(0, 4000).map((s: any) => ({ outer: ring(s?.outer), holes: (Array.isArray(s?.holes) ? s.holes : []).map(ring) })),
     }));
+    const mmRing = (r: any) => (Array.isArray(r) ? r.slice(0, 20000).map((p: any) => ({ x: num(p?.x, 0, -4000, 4000), y: num(p?.y, 0, -4000, 4000) })) : []);
+    const frame = d.frame && Array.isArray(d.frame.shapes) && d.frame.shapes.length
+      ? { name: String(d.frame.name ?? 'Shape').slice(0, 40), step: num(d.frame.step, 2.5, 0, 50), shapes: d.frame.shapes.slice(0, 200).map((s: any) => ({ outer: mmRing(s?.outer), holes: (Array.isArray(s?.holes) ? s.holes : []).map(mmRing) })).filter((s: any) => s.outer.length >= 3) }
+      : null;
     return {
+      frame,
       v: 2, name: String(d.name ?? 'My mandala').slice(0, 60), layers, customMotifs,
       thickness: num(d.thickness, 3, 0.2, 30), solidStack: d.solidStack !== false,
       plate: ['none', 'round', 'square', 'hexagon', 'outline'].includes(d.plate) ? d.plate : 'none',

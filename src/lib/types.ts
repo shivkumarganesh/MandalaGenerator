@@ -88,6 +88,14 @@ export interface Design {
   guides: boolean; // score the footprint of the next layer as a glue guide
   finish: Finish;
   print: { layer: number; base: number }; // mm, 3D-print thickness per tier / of the backplate
+  /** Optional outline the whole mandala is grown inside: it becomes the bottom sheet and clips every layer. */
+  frame?: Frame | null;
+}
+
+export interface Frame {
+  name: string;
+  shapes: Shape[]; // mm, centred on the origin
+  step: number; // mm each layer steps in from the one below
 }
 
 /** One physical sheet, ready for every output. */

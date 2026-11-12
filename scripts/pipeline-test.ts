@@ -7,6 +7,7 @@ import { printTiers } from '../src/lib/export3d';
 import { fusedBody, slab } from '../src/lib/mesh';
 import { parseDesign } from '../src/lib/share';
 import { area, difference } from '../src/lib/geom';
+import { fitToFrame, presetFrame } from '../src/lib/frame';
 
 let failed = 0;
 const check = (ok: boolean, msg: string) => { if (!ok) { failed++; console.log('  FAIL', msg); } };
@@ -74,6 +75,23 @@ for (const d0 of designs) {
   const big = scaleDesign(d0, 1.5);
   check(Math.abs(designDiameter(big) - designDiameter(d0) * 1.5) < 0.5, `${d0.name}: scaling is not proportional`);
 }
+// Surprise me with a fixed layer count, free and inside a shape
+for (let n = 3; n <= 8; n++)
+  for (let i = 0; i < 12; i++) {
+    const d = generate(5000 + n * 100 + i, undefined, undefined, n);
+    check(d.layers.length === n, `${d.name}: asked for ${n} layers, got ${d.layers.length}`);
+    const stack = buildStack(d);
+    check(stack.length === n, `${d.name}: ${n} layers built ${stack.length} sheets`);
+    check(!validate(stack).some((x) => x.level === 'error'), `${d.name} (${n} layers): blocking issues`);
+    for (const fid of ['heart', 'star']) {
+      const f = fitToFrame(d, presetFrame(fid, 180));
+      const fs = buildStack(f);
+      check(fs.length === n + 1 && fs[0].isPlate, `${d.name} in ${fid}: expected shape sheet + ${n} layers, got ${fs.length}`);
+      check(fs.every((l) => area(difference(l.shapes, fs[0].shapes)) < 0.5), `${d.name} in ${fid}: a layer pokes outside the shape`);
+      check(!validate(fs).some((x) => x.level === 'error'), `${d.name} in ${fid}: blocking issues: ${validate(fs).filter((x) => x.level === 'error').map((x) => x.message).join(' | ')}`);
+      check(area(fs[1].shapes) > area(fs[0].shapes) * 0.45, `${d.name} in ${fid}: mandala does not fill the shape`);
+    }
+  }
 check(parseDesign('{"v":2,"layers":[{"elements":[{"kind":"ring","count":1e9,"motif":"x","radius":"NaN"}]}]}')!.layers[0].elements[0].kind === 'ring', 'hostile JSON should be clamped, not crash');
 check(parseDesign('<svg>') === null, 'non-JSON must be rejected');
 console.log(`${designs.length * 2} designs · slowest build ${worst.toFixed(0)} ms · ${failed ? failed + ' FAILED' : 'all checks passed'}`);

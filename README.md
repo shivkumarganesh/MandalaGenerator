@@ -13,6 +13,8 @@ Same source; `VITE_TARGET` decides which one is built.
 ## What you can do
 
 - **Start in one click** – 10 templates, or *Surprise me* (a seeded generator: lotus, sunburst, lace, rose-window, snowflake… in 9 palettes).
+- **Endless variations** – choose how many layers you want (3–8, or Any) and every press of *Surprise me* gives a new design with exactly that many.
+- **Grow it inside a shape** – pick a heart, star, hexagon, square or drop, or upload your own SVG outline; the outline becomes the bottom sheet and the mandala is generated inside it, each layer stepping in from the edge.
 - **Build with rings** – 20 parametric motifs and 6 disc/band edges. Each shape either *adds material* or *cuts a window* so the layer below shows through.
 - **Edit directly** – click a shape to select it, drag to slide it in/out, Shift-drag to turn it; every number is also a drag-to-scrub field.
 - **Draw** – freehand brush with live radial symmetry (1–24 repeats, optional mirror).
@@ -70,6 +72,7 @@ There is exactly one geometry pipeline; every view and every exported file reads
 | `src/lib/motifs.ts` | Parametric motif library |
 | `src/lib/build.ts` | Elements → layers → stack, validation, stats |
 | `src/lib/recipes.ts` | Palettes, seeded generator, templates |
+| `src/lib/frame.ts` | Fit and clip a mandala inside a preset or uploaded outline |
 | `src/lib/importArt.ts` | SVG / bitmap / text → motif |
 | `src/lib/mesh.ts` | Watertight slab mesher, STL writer |
 | `src/lib/exportLaser.ts`, `export3d.ts` | Output packages |

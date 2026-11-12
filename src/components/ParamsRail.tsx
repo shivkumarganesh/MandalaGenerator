@@ -140,8 +140,15 @@ function Build() {
     <Card title="Size & material">
       <Num label="Design size" value={dia} min={20} max={1200} step={1} onChange={(v) => dia > 0 && setDesign((d) => scaleDesign(d, v / dia), 'scale')} />
       <Num label="Sheet thickness" value={design.thickness} min={0.5} max={12} step={0.1} onChange={(v) => patchDesign({ thickness: v }, 'thick')} />
-      <Select label="Backplate" value={design.plate} options={PLATES} onChange={(v) => patchDesign({ plate: v })} />
-      {design.plate !== 'none' && (
+      {design.frame && (
+        <>
+          <Num label="Step per layer" value={design.frame.step} min={0} max={30} step={0.1} onChange={(v) => patchDesign({ frame: { ...design.frame!, step: v } }, 'fstep')} />
+          <Row label="Shape colour"><Swatch label="Shape colour" value={design.plateColor} onChange={(v) => patchDesign({ plateColor: v }, 'pc')} /></Row>
+          <Note>Your {design.frame.name.toLowerCase()} is the bottom sheet; each layer above steps in by this much.</Note>
+        </>
+      )}
+      {!design.frame && <Select label="Backplate" value={design.plate} options={PLATES} onChange={(v) => patchDesign({ plate: v })} />}
+      {!design.frame && design.plate !== 'none' && (
         <>
           <Num label="Backplate margin" value={design.plateMargin} min={0} max={100} step={0.5} onChange={(v) => patchDesign({ plateMargin: v }, 'pm')} />
           <Row label="Backplate colour"><Swatch label="Backplate colour" value={design.plateColor} onChange={(v) => patchDesign({ plateColor: v }, 'pc')} /></Row>
