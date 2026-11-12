@@ -54,7 +54,19 @@ export interface StrokeEl extends ElBase {
   mirror: boolean;
 }
 
-export type Element = RingEl | DiscEl | StrokeEl;
+/** A mathematical line pattern (spirograph, rose curve, star polygon…) drawn as material `line` mm wide. */
+export interface CurveEl extends ElBase {
+  kind: 'curve';
+  pattern: string;
+  size: number; // mm radius
+  a: number;
+  b: number;
+  c: number; // 0..1
+  line: number; // mm
+  rotate: number; // deg
+}
+
+export type Element = RingEl | DiscEl | StrokeEl | CurveEl;
 
 export interface Layer {
   id: string;

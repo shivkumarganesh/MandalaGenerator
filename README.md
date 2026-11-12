@@ -13,7 +13,8 @@ Same source; `VITE_TARGET` decides which one is built.
 ## What you can do
 
 - **Christmas** – 12 festive templates (snow crystal, holly wreath, fir tree ring, poinsettia, jingle bells, Christmas star, tree / bauble / bell ornaments with hanging holes, frost window, Nordic tile, peppermint), a *Christmas* style for Surprise me, six festive motifs and three seasonal palettes.
-- **Start in one click** – 38 templates, or *Surprise me*: pick a **layout** (free form, circle, square, rectangle, more shapes or your own SVG outline), a **style** (14, or Any) and a **layer count** (3–8, or Any); every press gives a new design. Seeds are random 31-bit numbers, so repeats are practically never seen.
+- **Pattern algorithms** – eight mathematical patterns as editable shapes (spirograph, rose curve, guilloché braid, star polygon, flower of life, spiral arms, web, sunflower dots) and seven Surprise me styles built on them, with nine templates.
+- **Start in one click** – 47 templates, or *Surprise me*: pick a **layout** (free form, circle, square, rectangle, more shapes or your own SVG outline), a **style** (22, or Any) and a **layer count** (3–8, or Any); every press gives a new design. Seeds are random 31-bit numbers, so repeats are practically never seen.
 - **Line-work styles** – Filigree lotus, Gothic tracery, Star lace and Swirl build each layer as an open lattice of outlined petals tied by thin rings, nested smaller on every lower layer: the look of classic multilayer mandala cut files. The original solid-tier styles (Lotus tiers, Sunburst, Lace, …) are still there.
 - **Panels** – in a circle, square or rectangle layout the outline is the bottom sheet, every layer is clipped to it and keeps a border, each stepping in from the one below.
 - **Build with rings** – 20 parametric motifs and 6 disc/band edges. Each shape either *adds material* or *cuts a window* so the layer below shows through.
@@ -80,6 +81,7 @@ There is exactly one geometry pipeline; every view and every exported file reads
 | `src/lib/types.ts` | Data model + the coordinate convention |
 | `src/lib/geom.ts` | Clipper wrappers and polygon maths (mm floats) |
 | `src/lib/motifs.ts` | Parametric motif library |
+| `src/lib/curves.ts` | Pattern algorithms (spirograph, rose, guilloché, star polygon, flower of life, spiral, web, phyllotaxis) |
 | `src/lib/build.ts` | Elements → layers → stack, validation, stats |
 | `src/lib/recipes.ts` | Palettes, seeded generator, templates |
 | `src/lib/frame.ts` | Fit and clip a mandala inside a preset or uploaded outline |

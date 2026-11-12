@@ -1,8 +1,9 @@
 // The parameters rail: header (units, undo/redo, reset) · property cards · pinned export footer.
 import { useEffect, useMemo, useState } from 'react';
-import type { DiscEl, EdgeStyle, Element, Finish, Issue, PlateShape, RingEl, StrokeEl } from '../lib/types';
+import type { CurveEl, DiscEl, EdgeStyle, Element, Finish, Issue, PlateShape, RingEl, StrokeEl } from '../lib/types';
 import { MIN_FEATURE, buildStack, computeStats, designDiameter, scaleDesign, validate } from '../lib/build';
 import { MOTIFS } from '../lib/motifs';
+import { PATTERNS, patternDef } from '../lib/curves';
 import { IS_ATOMM, type AtommStatus } from '../lib/atomm';
 import { materialPlan } from '../lib/exportLaser';
 import { MACHINES, PRODUCTS, applyMachine, applyProduct } from '../lib/presets';
@@ -16,6 +17,7 @@ import { fmtLen } from './SheetView';
 function elementLabel(el: Element, motifName: (id: string) => string): string {
   if (el.kind === 'ring') return el.count > 1 ? `${el.count} × ${motifName(el.motif)}` : motifName(el.motif);
   if (el.kind === 'disc') return el.inner > 0 ? 'Ring band' : el.edge === 'plain' ? 'Disc' : 'Shaped disc';
+  if (el.kind === 'curve') return patternDef(el.pattern).label;
   return `Brush stroke ×${el.fold * (el.mirror ? 2 : 1)}`;
 }
 
@@ -73,11 +75,11 @@ function Selected() {
   const f = findElement(design, selected);
   if (!f) return <Card title="Selected shape"><Note>Click any shape on the canvas to edit it. Drag it to slide it in or out; hold Shift to turn it.</Note></Card>;
   const { el, layer } = f;
-  const set = (p: Partial<RingEl> | Partial<DiscEl> | Partial<StrokeEl>) => patchElement(el.id, p as Partial<Element>);
+  const set = (p: Partial<RingEl> | Partial<DiscEl> | Partial<StrokeEl> | Partial<CurveEl>) => patchElement(el.id, p as Partial<Element>);
   const R = Math.max(designDiameter(design), 100);
   const motifs = [...MOTIFS.map((m) => ({ id: m.id, label: m.label })), ...design.customMotifs.map((m) => ({ id: 'custom:' + m.id, label: m.name }))];
   return (
-    <Card title={el.kind === 'ring' ? 'Selected: motif ring' : el.kind === 'disc' ? 'Selected: disc' : 'Selected: brush stroke'}>
+    <Card title={el.kind === 'ring' ? 'Selected: motif ring' : el.kind === 'disc' ? 'Selected: disc' : el.kind === 'curve' ? 'Selected: pattern curve' : 'Selected: brush stroke'}>
       <SegRow label="Role" value={el.op} onChange={(v) => set({ op: v })} options={[{ id: 'add', label: 'Material' }, { id: 'cut', label: 'Window' }, { id: 'score', label: 'Engrave' }]} />
       {el.op === 'score' && <Note>Engraved as a blue score line on this layer — visible in 2D design and Cut sheets, not in the 3D preview.</Note>}
       {el.kind === 'ring' && (
@@ -107,6 +109,20 @@ function Selected() {
           )}
         </>
       )}
+      {el.kind === 'curve' && (() => {
+        const def = patternDef(el.pattern);
+        return (
+          <>
+            <Select label="Pattern" value={el.pattern} options={PATTERNS.map((p) => ({ id: p.id as string, label: p.label }))} onChange={(v) => set({ pattern: v, ...patternDef(v).defaults })} />
+            <Num label="Radius" value={el.size} min={2} max={R * 2} step={0.5} onChange={(v) => set({ size: v })} />
+            <Num label={def.a} value={el.a} min={def.aRange[0]} max={def.aRange[1]} integer unit="×" onChange={(v) => set({ a: v })} />
+            <Num label={def.b} value={el.b} min={def.bRange[0]} max={def.bRange[1]} integer unit="×" onChange={(v) => set({ b: v })} />
+            <Slider label={def.c} value={Math.round(el.c * 100)} min={0} max={100} onChange={(v) => set({ c: v / 100 })} format={(v) => v + '%'} />
+            <Num label={el.pattern === 'phyllo' ? 'Dot size' : 'Line width'} value={el.line} min={0.3} max={30} step={0.1} onChange={(v) => set({ line: v })} />
+            <Num label="Turn" value={el.rotate} min={-360} max={360} step={1} unit="°" onChange={(v) => set({ rotate: v })} />
+          </>
+        );
+      })()}
       {el.kind === 'stroke' && (
         <>
           <Num label="Thickness" value={el.size} min={0.5} max={40} step={0.5} onChange={(v) => set({ size: v })} />

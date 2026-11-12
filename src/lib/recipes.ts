@@ -1,6 +1,6 @@
 // Starting points: palettes, a seeded mandala generator ("Surprise me") and the template list.
 // Templates are just fixed (style, seed, palette) triples, so every thumbnail is the real thing.
-import type { Design, DiscEl, EdgeStyle, Element, Layer, RingEl } from './types';
+import type { CurveEl, Design, DiscEl, EdgeStyle, Element, Layer, RingEl } from './types';
 
 let idCounter = 0;
 export const uid = (p = 'e'): string => `${p}${Date.now().toString(36)}${(idCounter++).toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`;
@@ -61,6 +61,7 @@ export const ring = (o: Partial<RingEl> & Pick<RingEl, 'motif' | 'count' | 'radi
 export const disc = (o: Partial<DiscEl> & Pick<DiscEl, 'outer'>): DiscEl => ({
   id: uid(), kind: 'disc', op: 'add', inner: 0, edge: 'plain', lobes: 12, depth: 3, rotate: 0, ...o,
 });
+export const curve = (o: Partial<CurveEl> & Pick<CurveEl, 'pattern' | 'size' | 'a' | 'b' | 'c' | 'line'>): CurveEl => ({ id: uid(), kind: 'curve', op: 'add', rotate: 0, ...o });
 export const layer = (name: string, color: string, elements: Element[]): Layer => ({ id: uid('l'), name, color, visible: true, elements });
 
 export function emptyDesign(): Design {
@@ -82,8 +83,8 @@ function mulberry32(a: number) {
   };
 }
 
-export type Style = 'christmas' | 'filigree' | 'swirl' | 'gothic' | 'starlace' | 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
-export const STYLES: Style[] = ['christmas', 'filigree', 'swirl', 'gothic', 'starlace', 'lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
+export type Style = 'spirograph' | 'rosette' | 'girih' | 'guilloche' | 'flowerlife' | 'sunflower' | 'cobweb' | 'christmas' | 'filigree' | 'swirl' | 'gothic' | 'starlace' | 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
+export const STYLES: Style[] = ['spirograph', 'rosette', 'girih', 'guilloche', 'flowerlife', 'sunflower', 'cobweb', 'christmas', 'filigree', 'swirl', 'gothic', 'starlace', 'lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
 
 interface TierCfg {
   folds: number[]; layers: [number, number];
@@ -187,6 +188,7 @@ function windows(style: Style, rnd: () => number, count?: number): Layer[] {
 }
 
 export const STYLE_LABELS: Record<Style, string> = {
+  spirograph: 'Spirograph', rosette: 'Rose curves', girih: 'Star polygons', guilloche: 'Guilloché braid', flowerlife: 'Flower of life', sunflower: 'Sunflower', cobweb: 'Cobweb',
   christmas: 'Christmas', filigree: 'Filigree lotus', swirl: 'Swirl', gothic: 'Gothic tracery', starlace: 'Star lace',
   lotus: 'Lotus tiers', sunburst: 'Sunburst', dahlia: 'Dahlia', lace: 'Lace', rosewindow: 'Rose window',
   snowflake: 'Snowflake', compass: 'Compass', hearts: 'Hearts', aztec: 'Aztec', bloom: 'Bloom',
@@ -349,6 +351,74 @@ function christmas(variant: XmasVariant, rnd: () => number, count?: number): Lay
   return out;
 }
 
+// ── pattern algorithms ──────────────────────────────────────────────────────
+
+const CURVE_STYLES: Style[] = ['spirograph', 'rosette', 'girih', 'guilloche', 'flowerlife', 'sunflower', 'cobweb'];
+const coprime = (n: number): number[] => { const g = (x: number, y: number): number => (y ? g(y, x % y) : x); const o: number[] = []; for (let b = 1; b <= n / 2; b++) if (g(n, b) === 1) o.push(b); return o.length ? o : [1]; };
+
+/**
+ * Designs drawn by a mathematical curve instead of placed petals. Each layer runs the same
+ * algorithm with its parameters stepped by depth, so the layers are related but never identical;
+ * a rim (and hub) ring ties each layer's line-work into one piece.
+ */
+function curveStyle(style: Style, rnd: () => number, count?: number): Layer[] {
+  const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
+  const L = Math.max(3, count ?? 5 + Math.floor(rnd() * 2));
+  const out: Layer[] = [];
+  const add = (els: Element[]) => out.push(layer(`Layer ${out.length + 1}`, '#cccccc', els));
+
+  if (style === 'sunflower') {
+    const petals = pick([16, 20, 24]), seeds = 150 + Math.floor(rnd() * 140), motif = pick(['petal', 'leaf', 'lotus']);
+    for (let k = 0; k < L; k++) {
+      const core = R * (0.62 - (0.4 * k) / (L - 1)), len = R * 0.4 * (1 - (0.45 * k) / (L - 1));
+      const els: Element[] = [disc({ outer: core }), ring({ motif, count: petals, radius: core + len * 0.42, length: len, width: Math.min(len * 0.6, ((2 * Math.PI * (core + len * 0.4)) / petals) * 1.25), rotate: k % 2 ? 180 / petals : 0 })];
+      const next = k < L - 1 ? R * (0.62 - (0.4 * (k + 1)) / (L - 1)) : 0;
+      // the seed head: golden-angle dots cut through the visible band of each disc
+      if (k > 0 && core - next > 7) els.push(curve({ op: 'cut', pattern: 'phyllo', size: core - 2.5, a: Math.round(seeds * (core / (R * 0.62)) ** 2 * (1 - (next / core) ** 2)) + 12, b: 5, c: Math.min(0.92, (next + 2.5) / (core - 2.5)), line: 4.2 }));
+      add(els);
+    }
+    return out;
+  }
+
+  const n = style === 'flowerlife' ? 6 : pick(style === 'girih' ? [8, 10, 12, 16] : style === 'cobweb' ? [8, 10, 12, 16] : [5, 6, 7, 8, 9, 10, 12]);
+  const bs = coprime(n), b0 = Math.floor(rnd() * bs.length), c0 = 0.25 + rnd() * 0.45, flip = rnd() < 0.5;
+  const inner = 0.5 + rnd() * 0.22, weight = 0.85 + rnd() * 0.4, webRings = 2 + Math.floor(rnd() * 4);
+  add([disc({ outer: R * 0.97, edge: pick<EdgeStyle>(['scallop', 'plain', 'pointed']), lobes: n * 2, depth: R * 0.03 })]);
+  for (let k = 1; k < L; k++) {
+    const depth = L - 1 - k, s = L > 2 ? (k - 1) / (L - 2) : 1;
+    const wall = (1.8 + 1.4 * s) * weight, size = R * 0.92;
+    const rot = (depth % 2 ? 180 / n : 0) * (flip ? 1 : -1);
+    const els: Element[] = [disc({ outer: size + wall * 0.6, inner: size - wall * 0.9 })];
+    const cz = (v: number) => Math.min(0.95, Math.max(0.05, v));
+    if (style === 'spirograph') {
+      els.push(curve({ pattern: 'spiro', size: size * (1 - 0.05 * depth), a: n, b: bs[(b0 + depth) % bs.length], c: cz(c0 + (depth % 2 ? -0.16 : 0.12) * depth), line: wall, rotate: rot }));
+    } else if (style === 'rosette') {
+      els.push(curve({ pattern: 'rose', size, a: n * (depth % 2 ? 2 : 1), b: 1 + ((b0 + depth) % 3), c: cz(0.12 + 0.13 * depth + c0 * 0.2), line: wall, rotate: rot }));
+      if (depth >= 2) els.push(disc({ outer: size * 0.52 + wall * 0.6, inner: size * 0.52 - wall * 0.6 }));
+    } else if (style === 'girih') {
+      const maxSkip = Math.floor((n - 1) / 2);
+      els.push(curve({ pattern: 'starpoly', size, a: n, b: Math.max(2, maxSkip - ((b0 + depth) % Math.max(1, maxSkip - 1))), c: cz(0.34 * Math.min(3, depth + 1) - 0.1), line: wall, rotate: rot }));
+      if (depth >= 1) els.push(disc({ outer: size * inner + wall * 0.6, inner: size * inner - wall * 0.6 }));
+      if (depth === 0) els.push(ring({ motif: 'star', count: 1, radius: 0, length: size * inner * 0.5, width: size * inner * 0.5, outline: wall }));
+    } else if (style === 'guilloche') {
+      const bands = 2 + (depth > 1 ? 1 : 0);
+      for (let q = 0; q < bands; q++) {
+        const r = size * (1 - q * 0.3);
+        els.push(curve({ pattern: 'guilloche', size: r, a: n * (1 + ((depth + q) % 2)), b: 2 + ((b0 + depth + q) % 3), c: cz(0.2 + 0.05 * depth + c0 * 0.15), line: wall, rotate: rot }));
+        if (q) els.push(disc({ outer: r * 0.985 + wall * 0.6, inner: r * 0.985 - wall * 0.6 }));
+      }
+      els.push(ring({ motif: 'flower', count: 1, radius: 0, length: size * 0.34, width: size * 0.34, outline: wall, rotate: rot }));
+    } else if (style === 'flowerlife') {
+      els.push(curve({ pattern: 'flowerlife', size, a: Math.min(4, 1 + depth), b: 6, c: cz(0.5 + (c0 - 0.45) * 0.4), line: wall, rotate: depth % 2 ? 30 : 0 }));
+    } else {
+      els.push(curve({ pattern: 'web', size, a: n * (depth > 1 ? 2 : 1), b: webRings + depth, c: cz(c0 * 0.5 + 0.12 * depth), line: wall, rotate: rot }));
+      els.push(disc({ outer: size * inner * 0.22 }));
+    }
+    add(els);
+  }
+  return out;
+}
+
 const FILIGREE: Style[] = ['filigree', 'swirl', 'gothic', 'starlace'];
 
 /** `layers` fixes the number of sheets (2–10); leave it out to let the style decide. */
@@ -359,7 +429,7 @@ export function generate(seed: number, style?: Style, paletteId?: string, layers
   const cfg = TIERS[st];
   const xv = st === 'christmas' ? ((XMAS_VARIANTS as readonly string[]).includes(variant ?? '') ? (variant as XmasVariant) : XMAS_VARIANTS[Math.floor(rnd() * XMAS_VARIANTS.length)]) : null;
   if (xv && !paletteId) paletteId = XMAS_PALETTE[xv][Math.floor(rnd() * XMAS_PALETTE[xv].length)];
-  const built = xv ? christmas(xv, rnd, count) : FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
+  const built = CURVE_STYLES.includes(st) ? curveStyle(st, rnd, count) : xv ? christmas(xv, rnd, count) : FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
   const pal = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[Math.floor(rnd() * PALETTES.length)];
   const d: Design = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala', gen: { style: st } };
   return colourGenerated(d, pal);
@@ -382,6 +452,16 @@ export const TEMPLATES: Template[] = [
   { id: 'x-nordic', label: 'Nordic tile', style: 'starlace', seed: 326, palette: 'nordic', shape: 'square', layers: 5, group: 'Christmas' },
   { id: 'x-mint', label: 'Peppermint', style: 'swirl', seed: 249, palette: 'nordic', shape: 'circle', layers: 4, group: 'Christmas' },
   { id: 'x-bellp', label: 'Bell ornament', style: 'gothic', seed: 284, palette: 'christmas', shape: 'bell', layers: 4, group: 'Christmas', hang: 3 },
+  // pattern algorithms
+  { id: 'p-spiro', label: 'Spirograph', style: 'spirograph', seed: 41, palette: 'peacock', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-spiro2', label: 'Orbit panel', style: 'spirograph', seed: 47, palette: 'ocean', shape: 'circle', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-rose', label: 'Rose curves', style: 'rosette', seed: 42, palette: 'berry', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-girih', label: 'Star polygons', style: 'girih', seed: 43, palette: 'walnut', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-girih2', label: 'Girih tile', style: 'girih', seed: 49, palette: 'ocean', shape: 'square', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-guil', label: 'Guilloché', style: 'guilloche', seed: 44, palette: 'sunset', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-life', label: 'Flower of life', style: 'flowerlife', seed: 45, palette: 'forest', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-sun', label: 'Sunflower', style: 'sunflower', seed: 46, palette: 'terracotta', layers: 5, group: 'Pattern algorithms' },
+  { id: 'p-web', label: 'Cobweb', style: 'cobweb', seed: 48, palette: 'mono', layers: 4, group: 'Pattern algorithms' },
   // line-work and classics
   { id: 'f-lotus', label: 'Filigree lotus', style: 'filigree', seed: 207, palette: 'forest', layers: 6 },
   { id: 'f-rose', label: 'Rose lattice', style: 'filigree', seed: 200, palette: 'berry', layers: 6 },

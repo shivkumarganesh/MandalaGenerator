@@ -4,7 +4,8 @@ import type { CustomMotif, Design, Shape } from '../lib/types';
 import { buildStack, designDiameter } from '../lib/build';
 import { bbox, pathD } from '../lib/geom';
 import { MOTIFS } from '../lib/motifs';
-import { PALETTES, STYLES, STYLE_LABELS, TEMPLATES, applyPalette, disc, emptyDesign, generate, ring, type Style, type Template } from '../lib/recipes';
+import { PATTERNS, curveShapes } from '../lib/curves';
+import { PALETTES, STYLES, STYLE_LABELS, TEMPLATES, applyPalette, curve, disc, emptyDesign, generate, ring, type Style, type Template } from '../lib/recipes';
 import { FONTS, importSvg, loadBitmap, photoLevels, textToMotif, toMotif, traceImageData } from '../lib/importArt';
 import { coloringSvg } from '../lib/exportLaser';
 import { turntable } from '../lib/turntable';
@@ -166,7 +167,7 @@ function Templates() {
           </div>
         </div>
       </div>
-      {[['Christmas', TEMPLATES.filter((t) => t.group === 'Christmas')], ['All styles', TEMPLATES.filter((t) => !t.group)]].map(([title, list]) => (
+      {[['Christmas', TEMPLATES.filter((t) => t.group === 'Christmas')], ['Pattern algorithms', TEMPLATES.filter((t) => t.group === 'Pattern algorithms')], ['All styles', TEMPLATES.filter((t) => !t.group)]].map(([title, list]) => (
         <div key={title as string}>
           <div className="gen-rail-content"><h4>{title as string} ({(list as Template[]).length})</h4></div>
           <div className="thumb-grid" role="listbox" aria-label={`${title} templates`}>
@@ -239,6 +240,16 @@ function Motifs() {
           {DISCS.map((d) => (
             <button key={d.label} type="button" className="thumb thumb-sm" onClick={() => { const s = getState(); addElement(disc({ ...d.make(designR(s.design)), op: s.ui.addOp })); }}>
               <span className="thumb-card"><svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true">{d.icon ?? edgeIcon(d.make(100).edge!, d.make(100).lobes!)}</svg></span><span className="thumb-label">{d.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="rail-section">
+        <h4>Pattern curves</h4>
+        <div className="thumb-grid-sm">
+          {PATTERNS.map((p) => (
+            <button key={p.id} type="button" className="thumb thumb-sm" onClick={() => { const st = getState(); const R = designR(st.design); addElement(curve({ pattern: p.id, op: st.ui.addOp, size: +(R * 0.8).toFixed(1), ...p.defaults, line: p.id === 'phyllo' ? +(R * 0.04).toFixed(1) : +(Math.max(1.8, R * 0.022)).toFixed(1) })); }}>
+              <span className="thumb-card"><svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true"><path d={pathD(curveShapes(p.id, 0.5, p.defaults.a, p.defaults.b, p.defaults.c, p.id === 'phyllo' ? 0.1 : p.id === 'flowerlife' || p.id === 'web' || p.id === 'starpoly' || p.id === 'guilloche' ? 0.012 : 0.02), 4)} fill="currentColor" fillRule="evenodd" /></svg></span><span className="thumb-label">{p.label}</span>
             </button>
           ))}
         </div>

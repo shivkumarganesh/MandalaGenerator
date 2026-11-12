@@ -101,6 +101,9 @@ export default function Canvas2D({ zoomRef, onPct }: { zoomRef: MutableRefObject
         // a centrepiece (radius 0, single copy) scales instead of sliding outward
         if (el.count === 1 && el.radius === 0) { const k = Math.max(0.05, (r0 + dr) / Math.max(r0, 0.5)); patchElement(el.id, { length: +(el.length * k).toFixed(2), width: +(el.width * k).toFixed(2), ...(ev.shiftKey ? { rotate: +(el.rotate + da).toFixed(1) } : {}) }, key); }
         else patchElement(el.id, { radius: Math.max(0, +(el.radius + dr).toFixed(2)), ...(ev.shiftKey ? { rotate: +(el.rotate + da).toFixed(1) } : {}) }, key);
+      } else if (el.kind === 'curve') {
+        const k = Math.max(0.05, (r0 + dr) / Math.max(r0, 0.5));
+        patchElement(el.id, { size: +(el.size * k).toFixed(2), ...(ev.shiftKey ? { rotate: +(el.rotate + da).toFixed(1) } : {}) }, key);
       } else {
         const k = Math.max(0.05, (r0 + dr) / Math.max(r0, 0.5));
         patchElement(el.id, { outer: +(el.outer * k).toFixed(2), inner: +(el.inner * k).toFixed(2), ...(ev.shiftKey ? { rotate: +(el.rotate + da).toFixed(1) } : {}) }, key);

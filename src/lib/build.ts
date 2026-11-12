@@ -1,9 +1,10 @@
 // Design → physical layers. This is the ONE geometry pipeline: the 2D canvas, the 3D preview,
 // the laser SVGs and the STL/3MF meshes all consume the BuiltLayer[] it returns.
 import { getStroke } from 'perfect-freehand';
-import type { BuiltLayer, CustomMotif, Design, DiscEl, Element, Issue, Layer, RingEl, Shape, Stats, StrokeEl, Ring } from './types';
+import type { BuiltLayer, CurveEl, CustomMotif, Design, DiscEl, Element, Issue, Layer, RingEl, Shape, Stats, StrokeEl, Ring } from './types';
 import { area, bbox, circleRing, clean, cutLength, difference, intersect, mapShapes, offset, polygonRing, rotator, shapeArea, union } from './geom';
 import { builtinMotif } from './motifs';
+import { curveShapes, type CurvePattern } from './curves';
 
 // ── element → shapes (cached on object identity; state updates are immutable) ─────────────
 
@@ -77,11 +78,16 @@ function strokeShapes(el: StrokeEl): Shape[] {
   return out;
 }
 
+function curveEl(el: CurveEl): Shape[] {
+  const s = curveShapes(el.pattern as CurvePattern, el.size, el.a, el.b, el.c, el.line);
+  return el.rotate ? mapShapes(s, rotator(el.rotate)) : s;
+}
+
 /** Un-unioned copies of one element — used for building, hit-testing and selection outlines. */
 export function elementShapes(el: Element, custom: CustomMotif[]): Shape[] {
   const hit = elCache.get(el);
   if (hit && hit.motifs === custom) return hit.shapes;
-  const shapes = el.kind === 'ring' ? ringShapes(el, custom) : el.kind === 'disc' ? discShapes(el) : strokeShapes(el);
+  const shapes = el.kind === 'ring' ? ringShapes(el, custom) : el.kind === 'disc' ? discShapes(el) : el.kind === 'curve' ? curveEl(el) : strokeShapes(el);
   elCache.set(el, { motifs: custom, shapes });
   return shapes;
 }
@@ -176,7 +182,8 @@ export function buildStack(d: Design): BuiltLayer[] {
       const clip = offset(frame.shapes, -frame.step * (k + 1));
       const inside = intersect(s, clip).filter((p) => shapeArea(p) >= 1);
       const rim = frame.rim ?? 0;
-      if (rim <= 0 || !inside.length) return inside;
+      // a layer whose pattern falls wholly outside the outline still keeps its border, so the sheet count holds
+      if (rim <= 0 || !s.length) return inside;
       return union([...inside, ...difference(clip, offset(clip, -rim))]);
     });
   const final: Shape[][] = own.slice();
@@ -300,6 +307,7 @@ export function scaleDesign(d: Design, k: number): Design {
   const el = (e: Element): Element => {
     if (e.kind === 'ring') return { ...e, radius: e.radius * k, length: e.length * k, width: e.width * k, outline: e.outline * k };
     if (e.kind === 'disc') return { ...e, outer: e.outer * k, inner: e.inner * k, depth: e.depth * k };
+    if (e.kind === 'curve') return { ...e, size: e.size * k, line: e.line * k };
     return { ...e, size: e.size * k, pts: e.pts.map((p) => [p[0] * k, p[1] * k, ...p.slice(2)]) };
   };
   const frame = d.frame ? { ...d.frame, shapes: mapShapes(d.frame.shapes, (p) => ({ x: p.x * k, y: p.y * k })) } : d.frame;
