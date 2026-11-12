@@ -17,6 +17,8 @@ export const PALETTES: Palette[] = [
   { id: 'berry', label: 'Berry', colors: ['#2b1338', '#5b1f6b', '#a0318c', '#dd5a9a', '#f6a3b7', '#fde3e3'] },
   { id: 'peacock', label: 'Peacock', colors: ['#12263a', '#0f6d7a', '#12a594', '#f2c14e', '#f78154', '#fbf3d5'] },
   { id: 'terracotta', label: 'Terracotta', colors: ['#3a2a25', '#8c3b2a', '#c65d3b', '#e39b5d', '#f0cf9a', '#f9efdc'] },
+  { id: 'harvest', label: 'Harvest', colors: ['#3b2414', '#7a3b16', '#b5541c', '#d98324', '#e8b04a', '#f6e3b4'] },
+  { id: 'autumn', label: 'Autumn', colors: ['#2f2a1a', '#5c4a1e', '#8a3b1c', '#c4571f', '#e29a3b', '#f3dfae'] },
   { id: 'christmas', label: 'Christmas', colors: ['#16321f', '#2f6b45', '#9c1b25', '#c8323a', '#d9a441', '#fbf1d8'] },
   { id: 'frost', label: 'Frost', colors: ['#0d2640', '#1f4f7a', '#5c9bc4', '#a8d3ea', '#e3f2fa', '#ffffff'] },
   { id: 'nordic', label: 'Nordic red', colors: ['#6b101b', '#a51c27', '#f3ece0', '#c8323a', '#fff9f0', '#a51c27'] },
@@ -84,8 +86,8 @@ function mulberry32(a: number) {
   };
 }
 
-export type Style = 'spirograph' | 'rosette' | 'girih' | 'guilloche' | 'flowerlife' | 'sunflower' | 'cobweb' | 'christmas' | 'filigree' | 'swirl' | 'gothic' | 'starlace' | 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
-export const STYLES: Style[] = ['spirograph', 'rosette', 'girih', 'guilloche', 'flowerlife', 'sunflower', 'cobweb', 'christmas', 'filigree', 'swirl', 'gothic', 'starlace', 'lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
+export type Style = 'thanksgiving' | 'spirograph' | 'rosette' | 'girih' | 'guilloche' | 'flowerlife' | 'sunflower' | 'cobweb' | 'christmas' | 'filigree' | 'swirl' | 'gothic' | 'starlace' | 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
+export const STYLES: Style[] = ['spirograph', 'rosette', 'girih', 'guilloche', 'flowerlife', 'sunflower', 'cobweb', 'christmas', 'thanksgiving', 'filigree', 'swirl', 'gothic', 'starlace', 'lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
 
 interface TierCfg {
   folds: number[]; layers: [number, number];
@@ -190,7 +192,7 @@ function windows(style: Style, rnd: () => number, count?: number): Layer[] {
 
 export const STYLE_LABELS: Record<Style, string> = {
   spirograph: 'Spirograph', rosette: 'Rose curves', girih: 'Star polygons', guilloche: 'Guilloché braid', flowerlife: 'Flower of life', sunflower: 'Sunflower', cobweb: 'Cobweb',
-  christmas: 'Christmas', filigree: 'Filigree lotus', swirl: 'Swirl', gothic: 'Gothic tracery', starlace: 'Star lace',
+  christmas: 'Christmas', thanksgiving: 'Thanksgiving', filigree: 'Filigree lotus', swirl: 'Swirl', gothic: 'Gothic tracery', starlace: 'Star lace',
   lotus: 'Lotus tiers', sunburst: 'Sunburst', dahlia: 'Dahlia', lace: 'Lace', rosewindow: 'Rose window',
   snowflake: 'Snowflake', compass: 'Compass', hearts: 'Hearts', aztec: 'Aztec', bloom: 'Bloom',
 };
@@ -366,6 +368,80 @@ function christmas(variant: XmasVariant, rnd: () => number, count?: number): Lay
   return out;
 }
 
+// ── Thanksgiving ────────────────────────────────────────────────────────────
+
+export const HARVEST_VARIANTS = ['leaves', 'wreath', 'turkey', 'pumpkin', 'wheat'] as const;
+const FALL = ['#8a3b1c', '#b5541c', '#c4571f', '#d98324', '#e29a3b', '#e8b04a'];
+
+/**
+ * Harvest designs. A "-wide" variant keeps the centrepiece smaller and pushes foliage out to the
+ * rim, so the picture survives being cropped to a rectangle.
+ */
+function thanksgiving(variantIn: string, rnd: () => number, count?: number): Layer[] {
+  const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
+  const j = (v: number, amt = 0.08) => v * (1 - amt + rnd() * amt * 2);
+  const wide = variantIn.endsWith('-wide'), variant = variantIn.replace('-wide', '');
+  const L = Math.max(3, count ?? 5);
+  const fig = wide ? 0.76 : 1;
+  const out: Layer[] = [];
+  const add = (els: Element[], color = '#cccccc') => out.push(layer(`Layer ${out.length + 1}`, color, els));
+  const leaf = () => pick(['maple', 'oak']);
+
+  if (variant === 'leaves') {
+    const n = pick([8, 10, 12]);
+    for (let k = 0; k < L; k++) {
+      const t = k / (L - 1), core = R * (0.6 - 0.44 * t), len = R * j(0.44) * (1 - 0.42 * t);
+      const els: Element[] = [disc({ outer: core }), ring({ motif: k % 2 ? 'oak' : 'maple', count: n, radius: core + len * 0.4, length: len, width: len * (k % 2 ? 0.62 : 0.95), rotate: k % 2 ? 180 / n : 0 })];
+      if (k === L - 1) els.push(ring({ op: 'cut', motif: 'acorn', count: 1, radius: 0, length: core * 1.1, width: core * 0.9 }));
+      else if (k > 0 && core > 26) els.push(ring({ op: 'cut', motif: 'acorn', count: n, radius: core * 0.8, length: core * 0.2, width: core * 0.16, rotate: k % 2 ? 0 : 180 / n }));
+      add(els);
+    }
+  } else if (variant === 'wreath') {
+    const n = pick([12, 14, 16]), mid = R * j(0.74, 0.04), pitch = (2 * Math.PI * mid) / n, fat = j(1, 0.15);
+    add([disc({ outer: R * 0.97, edge: 'scallop', lobes: n, depth: R * j(0.04, 0.4) })], '#3b2414');
+    for (let k = 0; k < L - 2; k++) {
+      const half = k % 2 === 1, sc = 1 - 0.16 * k;
+      add([disc({ outer: mid + R * 0.05, inner: mid - R * 0.05 }), ring({ motif: half ? 'oak' : 'maple', count: n, radius: mid + (half ? -1 : 1) * R * 0.035, length: pitch * 1.75 * sc, width: pitch * (half ? 0.85 : 1.25) * sc * fat, rotate: half ? 180 / n : 0, spin: half ? 58 : 122 })], FALL[(k * 2 + 1) % FALL.length]);
+    }
+    add([ring({ motif: 'acorn', count: n / 2, radius: mid, length: R * 0.13, width: R * 0.1, spin: 180 }), ring({ motif: 'pumpkin', count: 1, radius: 0, length: R * 0.5 * fig, width: R * 0.56 * fig })], '#e29a3b');
+  } else if (variant === 'turkey') {
+    const n = pick([10, 12, 16]), borders = Math.max(0, L - 4), parts = L - 1 - borders;
+    const W = R * j(1.2, 0.07) * fig, H = W / 1.09, lf = leaf(), rim = j(1, 0.05);
+    add([disc({ outer: R * 0.97, edge: 'scallop', lobes: n * 2, depth: R * 0.03 }), ...(wide ? [ring({ motif: lf, count: n, radius: R * 0.9, length: R * 0.3, width: R * 0.26 })] : [])]);
+    for (let k = 0; k < borders; k++) {
+      if (wide) {
+        // foliage instead of a round border: it fills the sides of a rectangle
+        const r = R * (0.84 - 0.12 * k) * rim;
+        add([disc({ outer: r + 3, inner: r - 3 }), ring({ motif: k % 2 ? 'oak' : 'maple', count: n, radius: r, length: R * 0.36 * rim, width: R * (k % 2 ? 0.22 : 0.32), rotate: k % 2 ? 180 / n : 0 })], FALL[(k * 2 + 1) % FALL.length]);
+        continue;
+      }
+      const inner = R * (0.78 - 0.05 * k) * rim, outer = R * (0.93 - 0.03 * k);
+      add([disc({ outer, inner }), ring({ op: 'cut', motif: k % 2 ? 'circle' : lf, count: n * (k % 2 ? 2 : 1), radius: (outer + inner) / 2, length: R * (k % 2 ? 0.04 : 0.11), width: R * (k % 2 ? 0.04 : 0.1), rotate: k % 2 ? 0 : 180 / n })]);
+    }
+    add([ring({ motif: 'turkey', count: 1, radius: 0, length: H, width: W })], '#7a3b16');
+    if (parts >= 3) add([ring({ motif: 'turkey-fan', count: 1, radius: 0, length: H, width: W })], '#d98324');
+    add([ring({ motif: 'turkey-body', count: 1, radius: 0, length: H, width: W })], '#5a2c14');
+  } else if (variant === 'pumpkin') {
+    const n = pick([10, 12, 14]), extras = Math.max(0, L - 4), parts = L - 1 - extras;
+    const W = R * j(1.0, 0.09) * fig, H = W / 1.12, lf = leaf(), big = j(1, 0.12);
+    add([disc({ outer: R * 0.8, edge: 'scallop', lobes: n, depth: R * 0.04 }), ring({ motif: lf, count: n, radius: R * 0.78, length: R * 0.46 * big, width: R * 0.38 * big })]);
+    for (let k = 0; k < extras; k++) add([disc({ outer: R * (0.62 - 0.06 * k) }), ring({ motif: 'wheat', count: n, radius: R * (0.6 - 0.05 * k), length: R * 0.5, width: R * 0.2, rotate: (k % 2 ? 0 : 180 / n) })]);
+    add([ring({ motif: 'pumpkin', count: 1, radius: 0, length: H, width: W })], '#b5541c');
+    if (parts >= 3) add([ring({ motif: 'pumpkin-mid', count: 1, radius: 0, length: H, width: W })], '#d98324');
+    add([ring({ motif: 'pumpkin-core', count: 1, radius: 0, length: H, width: W })], '#e8b04a');
+  } else {
+    // wheat sunburst
+    const n = pick([12, 16, 20]), drop = j(0.2, 0.2), plump = j(1, 0.15);
+    add([disc({ outer: R * 0.97, edge: 'pointed', lobes: n, depth: R * j(0.05, 0.3) })]);
+    for (let k = 0; k < L - 2; k++) {
+      const s = 1 - drop * k, core = R * 0.36 * s * plump;
+      add([disc({ outer: core }), ring({ motif: 'wheat', count: k % 2 ? n / 2 : n, radius: core + R * 0.28 * s, length: R * 0.62 * s, width: R * 0.22 * s, rotate: k % 2 ? 180 / n : 0 })]);
+    }
+    add([ring({ motif: 'maple', count: 6, radius: R * 0.1 * fig + R * 0.03, length: R * 0.22, width: R * 0.2 }), disc({ outer: R * 0.07 })]);
+  }
+  return out;
+}
+
 // ── pattern algorithms ──────────────────────────────────────────────────────
 
 const CURVE_STYLES: Style[] = ['spirograph', 'rosette', 'girih', 'guilloche', 'flowerlife', 'sunflower', 'cobweb'];
@@ -444,7 +520,9 @@ export function generate(seed: number, style?: Style, paletteId?: string, layers
   const cfg = TIERS[st];
   const xv = st === 'christmas' ? ((XMAS_VARIANTS as readonly string[]).includes(variant ?? '') ? (variant as XmasVariant) : XMAS_VARIANTS[Math.floor(rnd() * XMAS_VARIANTS.length)]) : null;
   if (xv && !paletteId) paletteId = XMAS_PALETTE[xv][Math.floor(rnd() * XMAS_PALETTE[xv].length)];
-  const built = CURVE_STYLES.includes(st) ? curveStyle(st, rnd, count) : xv ? christmas(xv, rnd, count) : FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
+  const hv = st === 'thanksgiving' ? ((HARVEST_VARIANTS as readonly string[]).includes((variant ?? '').replace('-wide', '')) ? variant! : HARVEST_VARIANTS[Math.floor(rnd() * HARVEST_VARIANTS.length)]) : null;
+  if (hv && !paletteId) paletteId = rnd() < 0.5 ? 'harvest' : 'autumn';
+  const built = hv ? thanksgiving(hv, rnd, count) : CURVE_STYLES.includes(st) ? curveStyle(st, rnd, count) : xv ? christmas(xv, rnd, count) : FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
   const pal = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[Math.floor(rnd() * PALETTES.length)];
   const d: Design = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala', gen: { style: st }, ...(st === 'christmas' ? { theme: 'christmas' } : {}) };
   return colourGenerated(d, pal);
@@ -473,6 +551,20 @@ export const TEMPLATES: Template[] = [
   { id: 'x-nordic', label: 'Nordic tile', style: 'starlace', seed: 326, palette: 'nordic', shape: 'square', layers: 5, group: 'Christmas' },
   { id: 'x-mint', label: 'Peppermint', style: 'swirl', seed: 249, palette: 'nordic', shape: 'circle', layers: 4, group: 'Christmas' },
   { id: 'x-bellp', label: 'Bell ornament', style: 'gothic', seed: 284, palette: 'christmas', shape: 'bell', layers: 4, group: 'Christmas', hang: 3 },
+  // Thanksgiving
+  { id: 't-turkey', label: 'Turkey', style: 'thanksgiving', variant: 'turkey', seed: 61, palette: 'harvest', layers: 6, group: 'Thanksgiving' },
+  { id: 't-turkey-r', label: 'Turkey panel', style: 'thanksgiving', variant: 'turkey-wide', seed: 62, palette: 'autumn', shape: 'rect', layers: 6, group: 'Thanksgiving' },
+  { id: 't-wreath', label: 'Harvest wreath', style: 'thanksgiving', variant: 'wreath', seed: 63, palette: 'harvest', layers: 5, group: 'Thanksgiving' },
+  { id: 't-wreath-c', label: 'Wreath round', style: 'thanksgiving', variant: 'wreath-wide', seed: 64, palette: 'autumn', shape: 'circle', layers: 5, group: 'Thanksgiving' },
+  { id: 't-pumpkin', label: 'Pumpkin', style: 'thanksgiving', variant: 'pumpkin', seed: 65, palette: 'harvest', layers: 5, group: 'Thanksgiving' },
+  { id: 't-pumpkin-r', label: 'Pumpkin panel', style: 'thanksgiving', variant: 'pumpkin-wide', seed: 66, palette: 'autumn', shape: 'rect', layers: 6, group: 'Thanksgiving' },
+  { id: 't-leaves', label: 'Autumn leaves', style: 'thanksgiving', variant: 'leaves', seed: 67, palette: 'autumn', layers: 5, group: 'Thanksgiving' },
+  { id: 't-leaves-s', label: 'Leaf tile', style: 'thanksgiving', variant: 'leaves', seed: 68, palette: 'harvest', shape: 'square', layers: 5, group: 'Thanksgiving' },
+  { id: 't-wheat', label: 'Wheat sunburst', style: 'thanksgiving', variant: 'wheat', seed: 69, palette: 'harvest', shape: 'circle', layers: 5, group: 'Thanksgiving' },
+  { id: 't-wheat-r', label: 'Harvest panel', style: 'thanksgiving', variant: 'wheat-wide', seed: 70, palette: 'autumn', shape: 'rect', layers: 5, group: 'Thanksgiving' },
+  { id: 't-lace', label: 'Harvest lace', style: 'filigree', seed: 207, palette: 'harvest', shape: 'tall', layers: 5, group: 'Thanksgiving' },
+  { id: 't-maple', label: 'Maple leaf lace', style: 'starlace', seed: 312, palette: 'autumn', shape: 'maple', layers: 4, group: 'Thanksgiving' },
+  { id: 't-pumpkin-l', label: 'Pumpkin lace', style: 'gothic', seed: 284, palette: 'harvest', shape: 'pumpkin', layers: 4, group: 'Thanksgiving' },
   // pattern algorithms
   { id: 'p-spiro', label: 'Spirograph', style: 'spirograph', seed: 41, palette: 'peacock', layers: 5, group: 'Pattern algorithms' },
   { id: 'p-spiro2', label: 'Orbit panel', style: 'spirograph', seed: 47, palette: 'ocean', shape: 'circle', layers: 5, group: 'Pattern algorithms' },

@@ -168,7 +168,7 @@ function Templates() {
           </div>
         </div>
       </div>
-      {[['Christmas', TEMPLATES.filter((t) => t.group === 'Christmas')], ['Pattern algorithms', TEMPLATES.filter((t) => t.group === 'Pattern algorithms')], ['All styles', TEMPLATES.filter((t) => !t.group)]].map(([title, list]) => (
+      {[['Thanksgiving', TEMPLATES.filter((t) => t.group === 'Thanksgiving')], ['Christmas', TEMPLATES.filter((t) => t.group === 'Christmas')], ['Pattern algorithms', TEMPLATES.filter((t) => t.group === 'Pattern algorithms')], ['All styles', TEMPLATES.filter((t) => !t.group)]].map(([title, list]) => (
         <div key={title as string}>
           <div className="gen-rail-content"><h4>{title as string} ({(list as Template[]).length})</h4></div>
           <div className="thumb-grid" role="listbox" aria-label={`${title} templates`}>
@@ -243,9 +243,20 @@ function Motifs() {
         </div>
       </div>
       <div className="rail-section">
+        <h4>Harvest figures</h4>
+        <div className="thumb-grid-sm">
+          {MOTIFS.filter((m) => m.group === 'harvest').map((m) => (
+            <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
+              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label clip">{m.label}</span>
+            </button>
+          ))}
+        </div>
+        <p className="field-note flush">Pumpkin and turkey parts line up when added at the same size: put each part on its own layer.</p>
+      </div>
+      <div className="rail-section">
         <h4>Christmas figures</h4>
         <div className="thumb-grid-sm">
-          {MOTIFS.filter((m) => m.figure).map((m) => (
+          {MOTIFS.filter((m) => m.figure && m.group !== 'harvest').map((m) => (
             <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
               <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label clip">{m.label}</span>
             </button>
