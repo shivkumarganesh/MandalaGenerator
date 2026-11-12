@@ -59,3 +59,17 @@ notes on the official generator come from search-result summaries, not a hands-o
 - The Atomm build was exercised against a stand-in SDK implementing `lifecycle.on('export')`, `ui.toast` and the export-button slot, following the contract the previous build used. It has not run inside the live Atomm iframe.
 - Bitmap tracing is a threshold silhouette (one colour). Multi-colour separation is not attempted.
 - "Thin detail" is an area-based opening test; sharp tips are tolerated on purpose, so a few sub-millimetre points can pass.
+
+## 6. Matching the commercial "multilayer mandala" look
+
+Reference pieces (Etsy / Sofontsy cut files, wood wall art) share five traits. How the app covers each:
+
+| Trait in the references | In the app |
+|---|---|
+| Layers are open line-work, not solid tiers | Filigree / Gothic / Star lace / Swirl styles: outlined motif rings tied by thin ring bands |
+| The same petal nested smaller on each lower layer | Built into those styles (each lower layer repeats the petal at ~83 % and alternates half a step round) |
+| Finer detail and beaded bands on the deeper layers | Filler motifs from the third layer down; beaded bands (ring pierced by a row of holes) |
+| Round, square and rectangular framed panels | Layout selector; every layer keeps a border along the outline, stepped inward |
+| Swirls and paisley spirals | Swirl style spins each motif off-axis |
+
+Not matched yet: free-flowing asymmetric compositions (the wave and mountain panels), multi-panel triptychs, a crescent overlapping the mandala, and hand-drawn scrollwork. Those need a curve-based ornament generator rather than radial rings; the brush and SVG import are the current route to them.

@@ -138,8 +138,17 @@ export function buildStack(d: Design): BuiltLayer[] {
   let own = vis.map((x) => layerShapes(x.l, d.customMotifs));
   const frame = d.frame?.shapes.length ? d.frame : null;
   // inside a frame every layer is clipped to the outline, stepping in a little more each tier
-  // (crumbs under 1 mm² left at sharp corners are dropped — they cannot be cut or glued)
-  if (frame) own = own.map((s, k) => intersect(s, offset(frame.shapes, -frame.step * (k + 1))).filter((p) => shapeArea(p) >= 1));
+  // (crumbs under 1 mm² left at sharp corners are dropped — they cannot be cut or glued).
+  // With a rim, each layer also keeps a border along the outline, which ties open line-work
+  // into one piece and gives the stepped picture-frame look.
+  if (frame)
+    own = own.map((s, k) => {
+      const clip = offset(frame.shapes, -frame.step * (k + 1));
+      const inside = intersect(s, clip).filter((p) => shapeArea(p) >= 1);
+      const rim = frame.rim ?? 0;
+      if (rim <= 0 || !inside.length) return inside;
+      return union([...inside, ...difference(clip, offset(clip, -rim))]);
+    });
   const final: Shape[][] = own.slice();
   if (d.solidStack) {
     // top-down: every sheet also carries the footprint of everything above it
@@ -180,7 +189,27 @@ export function computeStats(d: Design, stack: BuiltLayer[], mode: 'laser' | 'pr
 }
 
 /** Real geometry checks, phrased as things to fix. Cheap enough to stay always-on. */
-export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser): Issue[] {
+const thinCache = new WeakMap<Shape[], Map<number, number>>();
+
+/** Area (mm²) that disappears when the sheet is opened by the minimum width. Cached per geometry. */
+function thinLoss(shapes: Shape[], minFeature: number): number {
+  let m = thinCache.get(shapes);
+  if (!m) thinCache.set(shapes, (m = new Map()));
+  let v = m.get(minFeature);
+  if (v === undefined) {
+    // mitered offsets are several times cheaper than rounded ones and slightly lenient, which suits a warning
+    const opened = offset(clean(offset(shapes, -minFeature / 2, 'miter'), 0.04), minFeature / 2, 'miter');
+    v = area(shapes) - area(opened);
+    m.set(minFeature, v);
+  }
+  return v;
+}
+
+/**
+ * `solid` = the design uses "fill under upper layers": every sheet then contains the ones above
+ * it by construction, so the overhang tests are skipped.
+ */
+export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser, solid = false): Issue[] {
   const issues: Issue[] = [];
   if (!stack.length) return [{ id: 'empty', level: 'error', message: 'Nothing to make yet — pick a template or add a motif.' }];
 
@@ -192,12 +221,16 @@ export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser): I
       fix: { label: 'Add backplate', action: 'plate' },
     });
 
-  for (let i = 1; i < stack.length; i++) {
+  for (let i = 1; i < stack.length && !solid; i++) {
     const L = stack[i], below = stack[i - 1];
+    // one boolean answers the common case: nothing hangs past the sheet below
+    const overhang = difference(L.shapes, below.shapes);
+    if (area(overhang) < 0.5) continue;
     let floating = 0, weak = 0;
     for (const piece of L.shapes) {
       const a = shapeArea(piece);
-      const contact = area(intersect([piece], below.shapes));
+      const hang = area(intersect([piece], overhang));
+      const contact = a - hang;
       if (contact < Math.min(0.5, a * 0.5)) floating++;
       else if (contact < a * 0.35) weak++;
     }
@@ -217,10 +250,9 @@ export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser): I
 
   for (const L of stack) {
     if (L.isPlate) continue;
-    // opening by half the minimum width removes anything thinner than it
-    const opened = offset(offset(L.shapes, -minFeature / 2), minFeature / 2);
-    const lost = area(difference(L.shapes, offset(opened, 0.05)));
-    if (lost > Math.max(8, area(L.shapes) * 0.012))
+    // a sheet's own shapes carry its fine detail (the fill under upper layers only thickens it)
+    const lost = thinLoss(L.own, minFeature);
+    if (lost > Math.max(8, area(L.own) * 0.012))
       issues.push({ id: 'thin-' + L.id, level: 'warn', message: `${L.name}: some details are thinner than ${minFeature} mm and may burn away or snap.` });
     if (L.shapes.length > 24)
       issues.push({ id: 'many-' + L.id, level: 'warn', message: `${L.name} is ${L.shapes.length} separate pieces to place by hand.` });
@@ -235,7 +267,7 @@ export function scaleDesign(d: Design, k: number): Design {
     if (e.kind === 'disc') return { ...e, outer: e.outer * k, inner: e.inner * k, depth: e.depth * k };
     return { ...e, size: e.size * k, pts: e.pts.map((p) => [p[0] * k, p[1] * k, ...p.slice(2)]) };
   };
-  const frame = d.frame ? { ...d.frame, step: d.frame.step, shapes: mapShapes(d.frame.shapes, (p) => ({ x: p.x * k, y: p.y * k })) } : d.frame;
+  const frame = d.frame ? { ...d.frame, shapes: mapShapes(d.frame.shapes, (p) => ({ x: p.x * k, y: p.y * k })) } : d.frame;
   return { ...d, frame, layers: d.layers.map((l) => ({ ...l, elements: l.elements.map(el) })) };
 }
 

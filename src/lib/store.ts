@@ -19,6 +19,7 @@ export interface UI {
   brush: { size: number; fold: number; mirror: boolean };
   toast: string | null;
   genLayers: number; // 0 = let the style decide
+  genStyle: string; // '' = any style
 }
 
 interface State { design: Design; origin: Design; ui: UI; past: Design[]; future: Design[] }
@@ -44,7 +45,7 @@ let state: State = {
     tool: 'templates', leadOpen: true, view: '2d',
     activeLayer: first.layers[first.layers.length - 1]?.id ?? null, selected: null,
     unit: 'mm', solo: false, explode: 0, addOp: 'add',
-    brush: { size: 4, fold: 12, mirror: true }, toast: null, genLayers: 0,
+    brush: { size: 4, fold: 12, mirror: true }, toast: null, genLayers: 0, genStyle: '',
   },
 };
 

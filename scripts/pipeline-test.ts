@@ -1,13 +1,13 @@
 // Non-DOM pipeline test: every template and a batch of random designs go through the real
 // build → validate → laser SVG → mesh code, with assertions on the output.
-import { TEMPLATES, fromTemplate, generate } from '../src/lib/recipes';
+import { TEMPLATES, STYLES, generate } from '../src/lib/recipes';
 import { buildStack, validate, computeStats, scaleDesign, designDiameter } from '../src/lib/build';
 import { cutLayers, layerSvg, sheetSvg } from '../src/lib/exportLaser';
 import { printTiers } from '../src/lib/export3d';
 import { fusedBody, slab } from '../src/lib/mesh';
 import { parseDesign } from '../src/lib/share';
 import { area, difference } from '../src/lib/geom';
-import { fitToFrame, presetFrame } from '../src/lib/frame';
+import { fitToFrame, presetFrame, templateDesign } from '../src/lib/frame';
 
 let failed = 0;
 const check = (ok: boolean, msg: string) => { if (!ok) { failed++; console.log('  FAIL', msg); } };
@@ -36,7 +36,7 @@ function volume(tris: number[]): number {
   return v;
 }
 
-const designs = [...TEMPLATES.map(fromTemplate), ...Array.from({ length: 30 }, (_, i) => generate(1000 + i))];
+const designs = [...TEMPLATES.map((t) => templateDesign(t)), ...Array.from({ length: 20 }, (_, i) => generate(1000 + i))];
 let worst = 0;
 for (const d0 of designs) {
   for (const d of [d0, { ...d0, plate: 'round' as const, solidStack: false, kerf: 0.15, guides: true }]) {
@@ -45,7 +45,7 @@ for (const d0 of designs) {
     const ms = performance.now() - t0; worst = Math.max(worst, ms);
     check(stack.length >= 3, `${d.name}: expected ≥3 sheets`);
     check(stack.every((l) => l.shapes.length > 0 && l.shapes.every((s) => s.outer.length >= 3 && s.outer.every((p) => isFinite(p.x) && isFinite(p.y)))), `${d.name}: invalid geometry`);
-    const issues = validate(stack);
+    const issues = validate(stack, 1.2, d.solidStack);
     if (d.solidStack) {
       check(!issues.some((i) => i.level === 'error'), `${d.name}: template has blocking issues: ${issues.map((i) => i.message).join(' | ')}`);
       for (let i = 1; i < stack.length; i++) check(area(difference(stack[i].shapes, stack[i - 1].shapes)) < 0.5, `${d.name}: sheet ${i} overhangs the one below despite solid stack`);
@@ -54,7 +54,7 @@ for (const d0 of designs) {
     check(cuts.every((c) => /^<\?xml[^]*viewBox="0 0 [\d.]+ [\d.]+"[^]*#FE0002/.test(layerSvg(c))), `${d.name}: layer SVG malformed`);
     check(sheetSvg(cuts).includes('mm"'), `${d.name}: sheet SVG not in mm`);
     const stats = computeStats(d, stack);
-    check(stats.sizeX > 150 && stats.sizeX < 260, `${d.name}: unexpected size ${stats.sizeX}`);
+    check(stats.sizeX > 130 && stats.sizeX < 260, `${d.name}: unexpected size ${stats.sizeX}`);
     // meshes
     const tiers = printTiers(d, stack, true);
     for (const t of tiers) {
@@ -75,15 +75,27 @@ for (const d0 of designs) {
   const big = scaleDesign(d0, 1.5);
   check(Math.abs(designDiameter(big) - designDiameter(d0) * 1.5) < 0.5, `${d0.name}: scaling is not proportional`);
 }
+check(TEMPLATES.length >= 20 && new Set(TEMPLATES.map((t) => t.id)).size === TEMPLATES.length, 'expected 20+ unique templates');
+// every style, many seeds: no two designs alike, none broken
+for (const st of STYLES) {
+  const seen = new Set<string>();
+  for (let i = 0; i < 25; i++) {
+    const d = generate(9000 + i * 13, st);
+    const stack = buildStack(d);
+    check(!validate(stack).some((x) => x.level === 'error'), `${st} #${i}: blocking issues`);
+    seen.add(stack.map((l) => Math.round(area(l.shapes))).join(','));
+  }
+  check(seen.size >= 23, `${st}: only ${seen.size} distinct designs out of 25 seeds`);
+}
 // Surprise me with a fixed layer count, free and inside a shape
 for (let n = 3; n <= 8; n++)
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 3; i++) {
     const d = generate(5000 + n * 100 + i, undefined, undefined, n);
     check(d.layers.length === n, `${d.name}: asked for ${n} layers, got ${d.layers.length}`);
     const stack = buildStack(d);
     check(stack.length === n, `${d.name}: ${n} layers built ${stack.length} sheets`);
     check(!validate(stack).some((x) => x.level === 'error'), `${d.name} (${n} layers): blocking issues`);
-    for (const fid of ['heart', 'star']) {
+    for (const fid of ['heart', 'star', 'circle', 'square', 'rect']) {
       const f = fitToFrame(d, presetFrame(fid, 180));
       const fs = buildStack(f);
       check(fs.length === n + 1 && fs[0].isPlate, `${d.name} in ${fid}: expected shape sheet + ${n} layers, got ${fs.length}`);

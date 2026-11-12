@@ -96,6 +96,7 @@ export interface Frame {
   name: string;
   shapes: Shape[]; // mm, centred on the origin
   step: number; // mm each layer steps in from the one below
+  rim?: number; // mm border kept on every layer along the outline (0 = none)
 }
 
 /** One physical sheet, ready for every output. */

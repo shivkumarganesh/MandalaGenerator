@@ -12,9 +12,9 @@ Same source; `VITE_TARGET` decides which one is built.
 
 ## What you can do
 
-- **Start in one click** – 10 templates, or *Surprise me* (a seeded generator: lotus, sunburst, lace, rose-window, snowflake… in 9 palettes).
-- **Endless variations** – choose how many layers you want (3–8, or Any) and every press of *Surprise me* gives a new design with exactly that many.
-- **Grow it inside a shape** – pick a heart, star, hexagon, square or drop, or upload your own SVG outline; the outline becomes the bottom sheet and the mandala is generated inside it, each layer stepping in from the edge.
+- **Start in one click** – 26 templates, or *Surprise me*: pick a **layout** (free form, circle, square, rectangle, more shapes or your own SVG outline), a **style** (14, or Any) and a **layer count** (3–8, or Any); every press gives a new design. Seeds are random 31-bit numbers, so repeats are practically never seen.
+- **Line-work styles** – Filigree lotus, Gothic tracery, Star lace and Swirl build each layer as an open lattice of outlined petals tied by thin rings, nested smaller on every lower layer: the look of classic multilayer mandala cut files. The original solid-tier styles (Lotus tiers, Sunburst, Lace, …) are still there.
+- **Panels** – in a circle, square or rectangle layout the outline is the bottom sheet, every layer is clipped to it and keeps a border, each stepping in from the one below.
 - **Build with rings** – 20 parametric motifs and 6 disc/band edges. Each shape either *adds material* or *cuts a window* so the layer below shows through.
 - **Edit directly** – click a shape to select it, drag to slide it in/out, Shift-drag to turn it; every number is also a drag-to-scrub field.
 - **Draw** – freehand brush with live radial symmetry (1–24 repeats, optional mirror).

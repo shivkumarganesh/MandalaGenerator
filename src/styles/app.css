@@ -96,3 +96,6 @@
 .file-btn { position: relative; cursor: pointer; font: var(--font-12-medium); }
 .file-btn input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .gen-rail-content .segmented > button { min-width: 0; }
+.select-field.block { display: flex; }
+.select-field.block > .select { width: 100%; }
+.inline-form .grow { flex: 1; min-width: 0; font: var(--font-12-medium); }

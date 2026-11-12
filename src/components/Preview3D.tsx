@@ -95,10 +95,10 @@ export default function Preview3D({ zoomRef, onPct }: { zoomRef: MutableRefObjec
     rig.add(content); scene.add(rig);
     const grain = grainTexture(); // shared across rebuilds
 
-    let R = 100, framed = false, defaultDist = 320;
+    let R = 100, framedR = 0, defaultDist = 320;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     const frame = () => {
-      defaultDist = R * 3.2;
+      defaultDist = R * 3.5;
       const az = 0.42, elv = 0.36; // slightly from the side, tilted down
       camera.position.set(Math.sin(az) * Math.cos(elv), Math.sin(elv), Math.cos(az) * Math.cos(elv)).multiplyScalar(defaultDist);
       controls.target.set(0, 0, 0);
@@ -146,7 +146,8 @@ export default function Preview3D({ zoomRef, onPct }: { zoomRef: MutableRefObjec
         sc.updateProjectionMatrix();
         controls.minDistance = R * 1.2; controls.maxDistance = R * 8;
         camera.near = R * 0.05; camera.far = R * 40; camera.updateProjectionMatrix();
-        if (!framed) { framed = true; frame(); } // later rebuilds leave the camera alone
+        // ordinary edits leave the camera alone; only a clearly different size (a new design or layout) re-frames it
+        if (!framedR || Math.abs(R - framedR) > framedR * 0.15) { framedR = R; frame(); }
       },
     };
 

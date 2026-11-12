@@ -3,6 +3,7 @@ import type { Design, Frame, Shape } from './types';
 import { bbox, mapShapes, union } from './geom';
 import { scaleDesign, shapesFar, layerShapes } from './build';
 import { builtinMotif } from './motifs';
+import { fromTemplate, type Template } from './recipes';
 
 /** Unit-box artwork → a filled, centred outline whose longer side is `size` mm. */
 export function makeFrame(unit: Shape[], aspect: number, size: number, name: string): Frame {
@@ -11,18 +12,25 @@ export function makeFrame(unit: Shape[], aspect: number, size: number, name: str
   const solid = union(mapShapes(unit, (p) => ({ x: p.x * w, y: p.y * h })).map((s) => ({ outer: s.outer, holes: [] })));
   const bb = bbox(solid)!;
   const cx = (bb.minX + bb.maxX) / 2, cy = (bb.minY + bb.maxY) / 2;
-  return { name, step: Math.max(1.5, size * 0.0125), shapes: mapShapes(solid, (p) => ({ x: p.x - cx, y: p.y - cy })) };
+  return { name, step: Math.max(1.5, size * 0.0125), rim: 0, shapes: mapShapes(solid, (p) => ({ x: p.x - cx, y: p.y - cy })) };
 }
 
-export const PRESET_FRAMES: { id: string; label: string }[] = [
-  { id: 'heart', label: 'Heart' }, { id: 'star', label: 'Star' }, { id: 'hexagon', label: 'Hexagon' },
-  { id: 'square', label: 'Square' }, { id: 'teardrop', label: 'Drop' },
+export const PRESET_FRAMES: { id: string; label: string; motif: string; aspect: number }[] = [
+  { id: 'circle', label: 'Circle', motif: 'circle', aspect: 1 },
+  { id: 'square', label: 'Square', motif: 'square', aspect: 1 },
+  { id: 'rect', label: 'Rectangle', motif: 'square', aspect: 1.5 },
+  { id: 'tall', label: 'Tall', motif: 'square', aspect: 0.667 },
+  { id: 'hexagon', label: 'Hexagon', motif: 'hexagon', aspect: 1.1547 },
+  { id: 'heart', label: 'Heart', motif: 'heart', aspect: 1.08 },
+  { id: 'star', label: 'Star', motif: 'star', aspect: 1 },
+  { id: 'teardrop', label: 'Drop', motif: 'teardrop', aspect: 0.72 },
 ];
 
+/** A built-in outline with a border on every layer (the stepped picture-frame look). */
 export function presetFrame(id: string, size: number): Frame {
-  const m = builtinMotif(id)!;
-  const aspect = id === 'heart' ? 1.08 : id === 'teardrop' ? 0.72 : id === 'hexagon' ? 1.1547 : 1;
-  return makeFrame(m.shapes, aspect, size, m.label);
+  const p = PRESET_FRAMES.find((f) => f.id === id) ?? PRESET_FRAMES[0];
+  const f = makeFrame(builtinMotif(p.motif)!.shapes, p.aspect, size, p.label);
+  return { ...f, rim: Math.max(2, size * 0.016) };
 }
 
 /** Put a design inside a frame: scale the mandala so it covers the outline, then let the build clip it. */
@@ -33,4 +41,10 @@ export function fitToFrame(d: Design, frame: Frame | null | undefined): Design {
   const need = shapesFar(frame.shapes) * 1.04;
   const scaled = far > 0 ? scaleDesign({ ...d, frame: null }, need / far) : d;
   return { ...scaled, frame, plate: 'none' };
+}
+
+/** A template as a ready design, including its panel shape. */
+export function templateDesign(t: Template, layers?: number): Design {
+  const d = fromTemplate(t, layers);
+  return t.shape ? fitToFrame(d, presetFrame(t.shape, 200)) : d;
 }

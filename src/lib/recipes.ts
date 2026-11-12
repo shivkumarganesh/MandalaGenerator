@@ -73,8 +73,8 @@ function mulberry32(a: number) {
   };
 }
 
-export type Style = 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
-export const STYLES: Style[] = ['lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
+export type Style = 'filigree' | 'swirl' | 'gothic' | 'starlace' | 'lotus' | 'sunburst' | 'dahlia' | 'lace' | 'rosewindow' | 'snowflake' | 'compass' | 'hearts' | 'aztec' | 'bloom';
+export const STYLES: Style[] = ['filigree', 'swirl', 'gothic', 'starlace', 'lotus', 'sunburst', 'dahlia', 'lace', 'rosewindow', 'snowflake', 'compass', 'hearts', 'aztec', 'bloom'];
 
 interface TierCfg {
   folds: number[]; layers: [number, number];
@@ -155,7 +155,8 @@ function windows(style: Style, rnd: () => number, count?: number): Layer[] {
   const L = count ?? auto;
   const edge = pick(cfg.edge);
   const out: Layer[] = [];
-  const T = (k: number) => R * (1 - 0.8 * (k / L));
+  const reach = 0.72 + rnd() * 0.12, bend = 0.85 + rnd() * 0.4, fill = cfg.fill * (0.85 + rnd() * 0.3);
+  const T = (k: number) => R * (1 - reach * Math.pow(k / L, bend));
   for (let k = 0; k < L; k++) {
     const r = T(k), next = k === L - 1 ? r * 0.25 : T(k + 1);
     const depth = Math.min(5, (r - next) * 0.22);
@@ -167,7 +168,7 @@ function windows(style: Style, rnd: () => number, count?: number): Layer[] {
       let cnt = n;
       let pitch = (2 * Math.PI * rad) / cnt;
       if (pitch < 8 && cnt % 2 === 0) { cnt /= 2; pitch *= 2; }
-      if (wlen >= 4) els.push(ring({ op: 'cut', motif: pick(cfg.cut), count: cnt, radius: rad, length: wlen, width: Math.max(2.5, pitch * cfg.fill), rotate: k % 2 ? 180 / n : 0 }));
+      if (wlen >= 4) els.push(ring({ op: 'cut', motif: pick(cfg.cut), count: cnt, radius: rad, length: wlen, width: Math.max(2.5, pitch * fill), rotate: k % 2 ? 180 / n : 0 }));
       if (wlen >= 14 && pitch > 14) els.push(ring({ op: 'cut', motif: 'circle', count: cnt, radius: rad + wlen * 0.2, length: 3, width: 3, rotate: (k % 2 ? 180 / n : 0) + 180 / cnt }));
     }
     if (k === L - 1) els.push(ring({ op: 'cut', motif: style === 'aztec' ? 'star' : 'flower', count: 1, radius: 0, length: r * 0.42, width: r * 0.42 }));
@@ -176,22 +177,120 @@ function windows(style: Style, rnd: () => number, count?: number): Layer[] {
   return out;
 }
 
+export const STYLE_LABELS: Record<Style, string> = {
+  filigree: 'Filigree lotus', swirl: 'Swirl', gothic: 'Gothic tracery', starlace: 'Star lace',
+  lotus: 'Lotus tiers', sunburst: 'Sunburst', dahlia: 'Dahlia', lace: 'Lace', rosewindow: 'Rose window',
+  snowflake: 'Snowflake', compass: 'Compass', hearts: 'Hearts', aztec: 'Aztec', bloom: 'Bloom',
+};
+
+/**
+ * Open line-work mandalas, like the classic multilayer cut files: every layer is a lattice of
+ * OUTLINED motifs tied together by thin rings. The same petal repeats smaller on each lower
+ * layer (nested outlines), odd layers sit half a step round, and detail gets finer going down.
+ */
+function filigree(style: Style, rnd: () => number, count?: number): Layer[] {
+  const pick = <T,>(a: T[]): T => a[Math.floor(rnd() * a.length)];
+  const cfg = style === 'swirl'
+    ? { folds: [6, 8, 9, 10], motifs: ['teardrop', 'leaf', 'petal'], spin: 24 + rnd() * 14, wf: 0.92 }
+    : style === 'gothic'
+      ? { folds: [8, 12, 16], motifs: ['arch', 'spear', 'lotus'], spin: 0, wf: 1.0 }
+      : style === 'starlace'
+        ? { folds: [8, 10, 12], motifs: ['kite', 'diamond', 'triangle', 'spear'], spin: 0, wf: 1.05 }
+        : { folds: [8, 10, 12, 16], motifs: ['lotus', 'petal', 'leaf'], spin: 0, wf: 1.12 };
+  const n = pick(cfg.folds);
+  const L = count ?? 5 + Math.floor(rnd() * 3);
+  const swirl = style === 'swirl';
+  const zones = swirl ? 2 : 2 + Math.floor(rnd() * 2); // radial bands of petals
+  const hub = R * (0.13 + rnd() * 0.05);
+  const bounds = [hub];
+  for (let j = 1; j <= zones; j++) bounds.push(hub + (R * 0.97 - hub) * Math.pow(j / zones, 0.82 + rnd() * 0.25));
+  const main = pick(cfg.motifs), alt = swirl ? main : pick(cfg.motifs), fine = pick(['circle', 'teardrop', 'diamond', 'petal']);
+  const spinDir = rnd() < 0.5 ? 1 : -1;
+  const dotted = rnd() < 0.75;
+  const out: Layer[] = [];
+
+  // bottom sheet: one solid piece that defines the silhouette
+  const back: Element[] = [disc({ outer: R * 0.9, edge: 'scallop', lobes: n, depth: R * 0.03 })];
+  back.push(ring({ motif: main, count: n, radius: bounds[zones - 1] + (R - bounds[zones - 1]) * 0.5, length: (R - bounds[zones - 1]) * 1.06, width: ((2 * Math.PI * R * 0.8) / n) * cfg.wf * 0.86, rotate: (zones - 1) % 2 ? 180 / n : 0, spin: cfg.spin * spinDir }));
+  out.push(layer('Layer 1', '#cccccc', back));
+
+  for (let k = 1; k < L; k++) {
+    const s = L > 2 ? (k - 1) / (L - 2) : 1; // 0 = deepest lattice, 1 = top
+    const depth = L - 1 - k; // 0 on top
+    const wall = 1.7 + 1.3 * s;
+    const q = Math.max(0.36, 1 - 0.17 * depth); // nested: lower layers repeat the petal smaller
+    const half = depth % 2 === 1;
+    const els: Element[] = [];
+    // tie rings at every zone boundary
+    for (let j = 0; j < zones; j++) els.push(disc({ outer: bounds[j] + wall * 0.6, inner: Math.max(0, bounds[j] - wall * 0.6) }));
+    if (dotted && depth >= 1 && depth <= 2) {
+      // a beaded band: a wider ring pierced by a row of holes
+      const j = 1 + ((depth + zones) % Math.max(1, zones - 1));
+      const r = bounds[Math.min(zones, j)], bw = 3.2;
+      const beads = n * (r > R * 0.55 ? 4 : 2);
+      els.push(disc({ outer: r + bw, inner: r - bw }));
+      els.push(ring({ op: 'cut', motif: 'circle', count: beads, radius: r, length: 3, width: 3 }));
+    }
+    for (let j = 0; j < zones; j++) {
+      const inner = bounds[j], outer = bounds[j + 1];
+      const span = (outer - inner) * (j === zones - 1 ? 1.04 : 1.16);
+      const zonePhase = (j % 2 ? 180 / n : 0) + (half ? 180 / n : 0);
+      const motif = half ? alt : main;
+      const len = Math.max(wall * 3, span * (half ? Math.min(1, q + 0.12) * 0.86 : q));
+      const rad = inner + len / 2 - wall * 0.5;
+      const pitch = (2 * Math.PI * (inner + span * 0.45)) / n;
+      const width = Math.max(wall * 2.6, pitch * cfg.wf * (half ? 0.8 : 1) * Math.pow(q, 0.55));
+      els.push(ring({ motif, count: n, radius: rad, length: len, width, rotate: zonePhase, spin: cfg.spin * spinDir, outline: wall }));
+      // finer filler on the deeper layers, between the big petals
+      if (!swirl && depth >= 3 && pitch > 16) {
+        const fl = Math.min(span * 0.42, pitch * 0.42);
+        els.push(ring({ motif: fine, count: n, radius: inner + span * 0.62, length: fl, width: fl * (fine === 'circle' ? 1 : 0.62), rotate: zonePhase + 180 / n, outline: Math.min(wall, fl * 0.22) }));
+      }
+    }
+    // centre
+    const c = hub * (1.5 - 0.12 * depth);
+    if (depth === 0) els.push(ring({ motif: style === 'starlace' ? 'star' : 'flower', count: 1, radius: 0, length: c, width: c, outline: wall }));
+    else els.push(ring({ motif: 'petal', count: n <= 9 ? n : n / 2, radius: hub * 0.52, length: hub * 0.95, width: hub * 0.42, rotate: half ? 180 / n : 0, outline: Math.min(wall, 1.6) }));
+    out.push(layer(`Layer ${k + 1}`, '#cccccc', els));
+  }
+  return out;
+}
+
+const FILIGREE: Style[] = ['filigree', 'swirl', 'gothic', 'starlace'];
+
 /** `layers` fixes the number of sheets (2–10); leave it out to let the style decide. */
 export function generate(seed: number, style?: Style, paletteId?: string, layers?: number): Design {
   const count = layers ? Math.min(10, Math.max(2, Math.round(layers))) : undefined;
   const rnd = mulberry32(seed * 7919 + 13);
   const st = style ?? STYLES[Math.floor(rnd() * STYLES.length)];
   const cfg = TIERS[st];
-  const built = cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
+  const built = FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
   const pal = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[Math.floor(rnd() * PALETTES.length)];
-  const d = { ...emptyDesign(), layers: built, name: st[0].toUpperCase() + st.slice(1) + ' mandala' };
+  const d = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala' };
   return applyPalette(d, pal);
 }
 
-export interface Template { id: string; label: string; style: Style; seed: number; palette: string }
+export interface Template { id: string; label: string; style: Style; seed: number; palette: string; shape?: string; layers?: number }
 
+// 26 starting points: the open line-work styles in every format first, then the solid-tier classics.
 export const TEMPLATES: Template[] = [
-  { id: 'lotus', label: 'Lotus', style: 'lotus', seed: 3, palette: 'wood' },
+  { id: 'f-lotus', label: 'Filigree lotus', style: 'filigree', seed: 207, palette: 'forest', layers: 6 },
+  { id: 'f-rose', label: 'Rose lattice', style: 'filigree', seed: 200, palette: 'berry', layers: 6 },
+  { id: 'f-round', label: 'Round panel', style: 'filigree', seed: 214, palette: 'ocean', shape: 'circle', layers: 6 },
+  { id: 'f-square', label: 'Square panel', style: 'filigree', seed: 221, palette: 'wood', shape: 'square', layers: 5 },
+  { id: 'f-wide', label: 'Wide panel', style: 'filigree', seed: 228, palette: 'ocean', shape: 'rect', layers: 6 },
+  { id: 'g-rose', label: 'Cathedral', style: 'gothic', seed: 270, palette: 'berry', layers: 6 },
+  { id: 'g-crown', label: 'Crown', style: 'gothic', seed: 277, palette: 'terracotta', layers: 5 },
+  { id: 'g-round', label: 'Tracery round', style: 'gothic', seed: 284, palette: 'sunset', shape: 'circle', layers: 6 },
+  { id: 'g-square', label: 'Tracery square', style: 'gothic', seed: 291, palette: 'ocean', shape: 'square', layers: 6 },
+  { id: 'g-wide', label: 'Sunrise panel', style: 'gothic', seed: 298, palette: 'sunset', shape: 'rect', layers: 5 },
+  { id: 's-star', label: 'Star lace', style: 'starlace', seed: 312, palette: 'forest', layers: 5 },
+  { id: 's-weave', label: 'Woven star', style: 'starlace', seed: 305, palette: 'wood', layers: 5 },
+  { id: 's-round', label: 'Compass rose', style: 'starlace', seed: 319, palette: 'mono', shape: 'circle', layers: 5 },
+  { id: 's-square', label: 'Star tile', style: 'starlace', seed: 326, palette: 'walnut', shape: 'square', layers: 5 },
+  { id: 'w-swirl', label: 'Swirl', style: 'swirl', seed: 235, palette: 'peacock', layers: 5 },
+  { id: 'w-round', label: 'Whirl panel', style: 'swirl', seed: 249, palette: 'terracotta', shape: 'circle', layers: 5 },
+  { id: 'lotus', label: 'Lotus tiers', style: 'lotus', seed: 3, palette: 'wood' },
   { id: 'sunburst', label: 'Sunburst', style: 'sunburst', seed: 5, palette: 'sunset' },
   { id: 'lace', label: 'Lace', style: 'lace', seed: 2, palette: 'ocean' },
   { id: 'dahlia', label: 'Dahlia', style: 'dahlia', seed: 4, palette: 'berry' },
@@ -203,4 +302,5 @@ export const TEMPLATES: Template[] = [
   { id: 'bloom', label: 'Bloom', style: 'bloom', seed: 11, palette: 'sunset' },
 ];
 
-export const fromTemplate = (t: Template): Design => ({ ...generate(t.seed, t.style, t.palette), name: t.label + ' mandala' });
+/** The free-form part of a template; lib/frame.templateDesign adds its shape, if it has one. */
+export const fromTemplate = (t: Template, layers?: number): Design => ({ ...generate(t.seed, t.style, t.palette, layers ?? t.layers), name: t.label });

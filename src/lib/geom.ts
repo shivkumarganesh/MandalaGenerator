@@ -4,7 +4,7 @@ import ClipperLib from 'clipper-lib';
 import type { Pt, Ring, Shape } from './types';
 
 const SCALE = 1000;
-const ARC_TOL = 0.02 * SCALE;
+const ARC_TOL = 0.05 * SCALE; // 0.05 mm chord error on rounded joins — below any cutter's precision
 const MIN_AREA = 0.02; // mm² — slivers smaller than this are numerical noise
 
 type IPath = { X: number; Y: number }[];
@@ -76,10 +76,10 @@ export function fromRingsEvenOdd(rings: Ring[]): Shape[] {
 }
 
 /** Positive grows, negative shrinks. Round joins. */
-export function offset(shapes: Shape[], delta: number): Shape[] {
+export function offset(shapes: Shape[], delta: number, join: 'round' | 'miter' = 'round'): Shape[] {
   if (!shapes.length || Math.abs(delta) < 1e-6) return shapes;
   const co = new ClipperLib.ClipperOffset(2, ARC_TOL);
-  co.AddPaths(shapesToPaths(shapes), ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+  co.AddPaths(shapesToPaths(shapes), join === 'miter' ? ClipperLib.JoinType.jtMiter : ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
   const tree = new ClipperLib.PolyTree();
   co.Execute(tree, delta * SCALE);
   return treeToShapes(tree);

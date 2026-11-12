@@ -48,7 +48,7 @@ export function parseDesign(text: string): Design | null {
     }));
     const mmRing = (r: any) => (Array.isArray(r) ? r.slice(0, 20000).map((p: any) => ({ x: num(p?.x, 0, -4000, 4000), y: num(p?.y, 0, -4000, 4000) })) : []);
     const frame = d.frame && Array.isArray(d.frame.shapes) && d.frame.shapes.length
-      ? { name: String(d.frame.name ?? 'Shape').slice(0, 40), step: num(d.frame.step, 2.5, 0, 50), shapes: d.frame.shapes.slice(0, 200).map((s: any) => ({ outer: mmRing(s?.outer), holes: (Array.isArray(s?.holes) ? s.holes : []).map(mmRing) })).filter((s: any) => s.outer.length >= 3) }
+      ? { name: String(d.frame.name ?? 'Shape').slice(0, 40), step: num(d.frame.step, 2.5, 0, 50), rim: num(d.frame.rim, 0, 0, 50), shapes: d.frame.shapes.slice(0, 200).map((s: any) => ({ outer: mmRing(s?.outer), holes: (Array.isArray(s?.holes) ? s.holes : []).map(mmRing) })).filter((s: any) => s.outer.length >= 3) }
       : null;
     return {
       frame,

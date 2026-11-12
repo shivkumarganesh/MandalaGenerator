@@ -56,7 +56,7 @@ export function PrintDialog({ open, onClose }: { open: boolean; onClose: () => v
   const info = useMemo(() => {
     if (!open) return null;
     const stack = buildStack(design);
-    return { stack, stats: computeStats(design, stack, 'print'), tiers: printTiers(design, stack, mode !== 'parts'), thin: validate(stack, MIN_FEATURE.print).filter((i) => i.id.startsWith('thin')), loose: mode === 'parts' ? validate(stack).filter((i) => i.id.startsWith('float') || i.id === 'bottom') : [] };
+    return { stack, stats: computeStats(design, stack, 'print'), tiers: printTiers(design, stack, mode !== 'parts'), thin: validate(stack, MIN_FEATURE.print, true).filter((i) => i.id.startsWith('thin')), loose: mode === 'parts' ? validate(stack).filter((i) => i.id.startsWith('float') || i.id === 'bottom') : [] };
   }, [open, design, mode]);
   const go = async () => {
     if (!info) return;

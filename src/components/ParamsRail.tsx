@@ -143,6 +143,7 @@ function Build() {
       {design.frame && (
         <>
           <Num label="Step per layer" value={design.frame.step} min={0} max={30} step={0.1} onChange={(v) => patchDesign({ frame: { ...design.frame!, step: v } }, 'fstep')} />
+          <Num label="Border width" value={design.frame.rim ?? 0} min={0} max={30} step={0.1} onChange={(v) => patchDesign({ frame: { ...design.frame!, rim: v } }, 'frim')} />
           <Row label="Shape colour"><Swatch label="Shape colour" value={design.plateColor} onChange={(v) => patchDesign({ plateColor: v }, 'pc')} /></Row>
           <Note>Your {design.frame.name.toLowerCase()} is the bottom sheet; each layer above steps in by this much.</Note>
         </>
@@ -174,7 +175,7 @@ export function useChecks() {
   const [issues, setIssues] = useState<Issue[]>([]);
   useEffect(() => {
     // geometry checks trail the edit by a beat so dragging stays smooth
-    const t = setTimeout(() => setIssues(validate(buildStack(design), MIN_FEATURE.laser)), 220);
+    const t = setTimeout(() => setIssues(validate(buildStack(design), MIN_FEATURE.laser, design.solidStack)), 220);
     return () => clearTimeout(t);
   }, [design]);
   return issues;
