@@ -16,6 +16,7 @@ export function cutLayers(d: Design, stack: BuiltLayer[]): CutLayer[] {
     const cut = d.kerf > 0 ? offset(l.shapes, d.kerf / 2) : l.shapes;
     let score: Shape[] = [];
     if (d.guides && i < stack.length - 1) score = offset(intersect(stack[i + 1].shapes, l.shapes), -0.5);
+    if (l.score.length) score = [...score, ...l.score];
     const bb = bbox(cut) ?? { minX: 0, minY: 0, maxX: 0, maxY: 0 };
     const slug = l.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'layer';
     return {
@@ -81,6 +82,72 @@ export async function svgToPng(svg: string): Promise<Blob> {
   } finally { URL.revokeObjectURL(url); }
 }
 
+// ── material plan ───────────────────────────────────────────────────────────
+
+export interface Nest { sheets: SheetCell[][]; tooBig: string[]; w: number; h: number }
+
+/** Shelf-pack whole layers onto stock sheets (layers stay in one piece so assembly stays simple). */
+export function nestSheets(cuts: CutLayer[], w: number, h: number, gap = 4): Nest {
+  const sheets: SheetCell[][] = [];
+  const tooBig: string[] = [];
+  const order = cuts.slice().sort((a, b) => b.h - a.h);
+  let cur: SheetCell[] = [], x = gap, y = gap, rowH = 0;
+  for (const c of order) {
+    if (c.w + gap * 2 > w || c.h + gap * 2 > h) { tooBig.push(c.name); continue; }
+    if (x + c.w + gap > w) { x = gap; y += rowH + gap; rowH = 0; }
+    if (y + c.h + gap > h) { if (cur.length) sheets.push(cur); cur = []; x = gap; y = gap; rowH = 0; }
+    cur.push({ c, x, y });
+    x += c.w + gap; rowH = Math.max(rowH, c.h);
+  }
+  if (cur.length) sheets.push(cur);
+  return { sheets, tooBig, w, h };
+}
+
+export interface Plan { sheets: number; tooBig: string[]; minutes: number; cost: number }
+
+export function materialPlan(d: Design, stack: BuiltLayer[]): Plan | null {
+  const s = d.sheet;
+  if (!s || s.w <= 0 || s.h <= 0) return null;
+  const cuts = cutLayers(d, stack);
+  const nest = nestSheets(cuts, s.w, s.h);
+  const length = cuts.reduce((t, c) => t + c.cut.reduce((u, sh) => u + ringLen(sh.outer) + sh.holes.reduce((q, r) => q + ringLen(r), 0), 0), 0);
+  return { sheets: nest.sheets.length, tooBig: nest.tooBig, minutes: length / Math.max(0.1, s.speed) / 60, cost: nest.sheets.length * s.price };
+}
+
+const ringLen = (r: { x: number; y: number }[]) => { let l = 0; for (let i = 0; i < r.length; i++) { const p = r[i], q = r[(i + 1) % r.length]; l += Math.hypot(q.x - p.x, q.y - p.y); } return l; };
+
+const nestSvg = (cells: SheetCell[], w: number, h: number) =>
+  svgDoc(w, h, `<rect width="${w}" height="${h}" fill="none" stroke="#999999" stroke-width="0.1" stroke-dasharray="2 2"/>` +
+    cells.map(({ c, x, y }) => `<g transform="translate(${(x - c.minX).toFixed(3)} ${(y - c.minY).toFixed(3)})">${paths(c)}</g>`).join(''));
+
+// ── other outputs ───────────────────────────────────────────────────────────
+
+/** For Cricut / Silhouette and similar: every layer as a FILLED shape in its colour, side by side, 1:1 in mm. */
+export function craftSvg(stack: BuiltLayer[]): string {
+  const cuts = cutLayers({ kerf: 0, guides: false } as Design, stack);
+  const { cells, w, h } = sheetLayout(cuts, 8);
+  return svgDoc(w, h, cells.map(({ c, x, y }) => `<g id="${c.file.replace('.svg', '')}" transform="translate(${(x - c.minX).toFixed(3)} ${(y - c.minY).toFixed(3)})"><path d="${pathD(c.cut, 3)}" fill="${c.color}" fill-rule="evenodd"/></g>`).join(''));
+}
+
+/** Black line art of the assembled piece (hidden lines stay hidden) — a colouring page. */
+export function coloringSvg(stack: BuiltLayer[], px?: number): string {
+  const bb = bbox(stack.flatMap((l) => l.shapes)) ?? { minX: -50, minY: -50, maxX: 50, maxY: 50 };
+  const m = Math.max(bb.maxX - bb.minX, bb.maxY - bb.minY) * 0.05 + 2;
+  const w = bb.maxX - bb.minX + m * 2, h = bb.maxY - bb.minY + m * 2;
+  const size = px ? `width="${px}" height="${Math.round((px * h) / w)}"` : `width="${w.toFixed(2)}mm" height="${h.toFixed(2)}mm"`;
+  const sw = (Math.max(w, h) * 0.0035).toFixed(2);
+  return `<svg xmlns="http://www.w3.org/2000/svg" ${size} viewBox="${(bb.minX - m).toFixed(2)} ${(bb.minY - m).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}"><rect x="${bb.minX - m}" y="${bb.minY - m}" width="${w}" height="${h}" fill="#ffffff"/>` +
+    stack.map((l) => `<path d="${pathD(l.shapes)}" fill="#ffffff" stroke="#111111" stroke-width="${sw}" stroke-linejoin="round" fill-rule="evenodd"/>`).join('') + '</svg>';
+}
+
+const esc = (s: string) => s.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c]!);
+
+/** A printable page: one picture per step, each adding the next sheet. */
+export function assemblyGuide(d: Design, stack: BuiltLayer[]): string {
+  const steps = stack.map((l, i) => `<section><h2>Step ${i + 1} — ${i === 0 ? 'start with' : 'add'} ${esc(l.name)}</h2><p>File ${String(i + 1).padStart(2, '0')} · ${l.shapes.length} piece${l.shapes.length > 1 ? 's' : ''}${i ? ' · glue onto the previous sheet' : ''}</p>${previewSvg(stack.slice(0, i + 1), 420)}</section>`).join('');
+  return `<!doctype html><html lang="en"><meta charset="utf-8"><title>${esc(d.name)} — assembly guide</title><style>body{font:14px/1.5 system-ui,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#171719}h1{font-size:22px}h2{font-size:15px;margin:0}p{margin:2px 0 8px;color:#3d3e42}main{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px}section{break-inside:avoid}svg{width:100%;height:auto;background:#f6f6f7;border-radius:8px}@media print{svg{background:none}}</style><h1>${esc(d.name)} — assembly guide</h1><p>${stack.length} sheets of ${d.thickness} mm. Dry-fit first, then glue from the bottom up.${d.holes?.pins ? ' Push two 3 mm pins or toothpicks through the alignment holes to keep the sheets registered.' : ''}</p><main>${steps}</main></html>`;
+}
+
 const mm = (n: number) => n.toFixed(1);
 
 export function readme(d: Design, stack: BuiltLayer[], cuts: CutLayer[]): string {
@@ -91,8 +158,8 @@ export function readme(d: Design, stack: BuiltLayer[], cuts: CutLayer[]): string
     `Material      : ${stack.length} sheets of ${d.thickness} mm`,
     `Kerf offset   : ${d.kerf ? d.kerf + ' mm (already applied)' : 'none'}`, '',
     'FILES', ...cuts.map((c, i) => `  ${c.file}  ${mm(c.w)} x ${mm(c.h)} mm   ${i === 0 ? '(bottom)' : i === cuts.length - 1 ? '(top)' : ''}`),
-    '  all-layers.svg   every sheet on one page', '  preview.svg      assembled, coloured reference', '  project.mandala.json   re-open in the app to keep editing', '',
-    'LINE COLOURS', `  red  ${CUT}  cut through`, ...(d.guides ? [`  blue ${SCORE}  score lightly — shows where the next sheet sits`] : []),
+    '  all-layers.svg   every sheet on one page', '  cutting-machine-layers.svg   filled colour layers for Cricut / Silhouette', '  assembly-guide.html   printable step-by-step pictures', ...(d.sheet && d.sheet.w > 0 ? ['  material-plan/   layers arranged on your stock sheets'] : []), '  preview.svg      assembled, coloured reference', '  project.mandala.json   re-open in the app to keep editing', '',
+    'LINE COLOURS', `  red  ${CUT}  cut through`, ...(d.guides || stack.some((l) => l.score.length) ? [`  blue ${SCORE}  score / engrave lightly — glue guides and engraved detail`] : []),
     '', 'ASSEMBLY', '  1. Cut every file from the same thickness. Files are 1:1 in millimetres — do not rescale.',
     '  2. Stack in file order, 01 at the bottom. Dry-fit before gluing.',
     '  3. Glue from the bottom up; a thin, even coat of wood glue, kept 2 mm inside the edges.',
@@ -105,6 +172,9 @@ export async function laserZip(d: Design, stack: BuiltLayer[]): Promise<Blob> {
   const zip = new JSZip();
   cuts.forEach((c) => zip.file(c.file, layerSvg(c)));
   zip.file('all-layers.svg', sheetSvg(cuts));
+  zip.file('cutting-machine-layers.svg', craftSvg(stack));
+  zip.file('assembly-guide.html', assemblyGuide(d, stack));
+  if (d.sheet && d.sheet.w > 0 && d.sheet.h > 0) nestSheets(cuts, d.sheet.w, d.sheet.h).sheets.forEach((cells, i) => zip.file(`material-plan/sheet-${i + 1}.svg`, nestSvg(cells, d.sheet!.w, d.sheet!.h)));
   zip.file('preview.svg', previewSvg(stack));
   zip.file('project.mandala.json', JSON.stringify(d));
   zip.file('README.txt', readme(d, stack, cuts));

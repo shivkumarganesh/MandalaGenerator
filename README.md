@@ -19,10 +19,17 @@ Same source; `VITE_TARGET` decides which one is built.
 - **Edit directly** – click a shape to select it, drag to slide it in/out, Shift-drag to turn it; every number is also a drag-to-scrub field.
 - **Draw** – freehand brush with live radial symmetry (1–24 repeats, optional mirror).
 - **Bring your own art** – SVG (filled shapes *and* stroke-only outlines), PNG/JPG (traced to a silhouette), or type a name. Imports become motifs you can repeat around the mandala.
+- **Edit one copy** – break a ring into separate shapes and move, restyle or re-layer any single one.
+- **Engrave** – any shape can be a blue score line on its layer instead of a cut.
+- **More like this** – a new design that keeps the current style, layer count and colours.
+- **Photo portrait** – split a photo into 2–6 tonal layers that stack into a picture.
+- **Make it a…** – wall art, clock, coaster, ornament, earring or trivet presets; centre hole, hanging hole and alignment-pin holes through every sheet.
+- **Machine & material plan** – machine presets (kerf, thinnest detail, sheet size), layers arranged on your stock sheets, sheets needed, cutting time and cost.
 - **See it** – 2D design, a three.js 3D preview with real thickness and an explode slider, and *Cut sheets* (exactly what will be exported).
 - **Trust it** – "Ready to make?" checks for loose pieces, weak glue contact and details too thin to cut, with one-click fixes.
 - **Make it**
-  - Laser: one SVG per sheet (1:1 mm, red `#FE0002` cut hairlines, optional blue glue guides, kerf compensation), an all-in-one sheet, a preview, a README and the project file.
+  - Laser: one SVG per sheet (1:1 mm, red `#FE0002` cut hairlines, blue score lines for engraving and glue guides, kerf compensation), an all-in-one sheet, the material-plan sheets, a filled-colour SVG for Cricut / Silhouette, a printable assembly guide, a preview, a README and the project file.
+  - Share: a shaded picture, a colouring page, and a 6-second turntable video of the 3D model.
   - 3D print (standalone): one STL with filament-swap heights, a multi-colour 3MF, or flat parts to glue. Meshes are watertight and need no supports.
 
 ## Develop

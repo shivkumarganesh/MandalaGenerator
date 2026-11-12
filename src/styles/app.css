@@ -99,3 +99,7 @@
 .select-field.block { display: flex; }
 .select-field.block > .select { width: 100%; }
 .inline-form .grow { flex: 1; min-width: 0; font: var(--font-12-medium); }
+.score-line { fill: none; stroke: var(--color-text-primary); stroke-opacity: 0.55; stroke-width: 1.2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.select.wide-select { width: 150px; }
+.segmented > button { min-width: 0; }
+.field-row .segmented > button { padding: 0 var(--space-75); }

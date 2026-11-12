@@ -103,12 +103,19 @@ export function layerShapes(layer: Layer, custom: CustomMotif[]): Shape[] {
     pending = [];
   };
   for (const el of layer.elements) {
+    if (el.op === 'score') continue; // engraving does not change the sheet's outline
     if (el.op !== pendingOp) { flush(); pendingOp = el.op; }
     pending.push(...elementShapes(el, custom));
   }
   flush();
   layerCache.set(layer, { motifs: custom, shapes: acc });
   return acc;
+}
+
+/** Engraved artwork of a layer (before it is trimmed to the sheet). */
+export function layerScore(layer: Layer, custom: CustomMotif[]): Shape[] {
+  const els = layer.elements.filter((e) => e.op === 'score');
+  return els.length ? els.flatMap((e) => elementShapes(e, custom)) : [];
 }
 
 // ── stack ───────────────────────────────────────────────────────────────────
@@ -127,6 +134,29 @@ function plateShapes(d: Design, footprint: Shape[]): Shape[] {
     case 'outline': return offset(footprint, Math.max(m, 0.5)).map((s) => ({ outer: s.outer, holes: [] }));
     default: return [];
   }
+}
+
+function holeShapes(d: Design, stack: BuiltLayer[]): Shape[] {
+  const h = d.holes;
+  if (!h || !stack.length) return [];
+  const out: Shape[] = [];
+  if (h.centre > 0) out.push({ outer: circleRing(h.centre / 2, 40), holes: [] });
+  if (h.hang > 0) {
+    const bb = bbox(stack[0].shapes);
+    if (bb) {
+      // straight above the centre, a few mm inside the bottom sheet's top edge
+      const band = Math.max(2, (bb.maxX - bb.minX) * 0.03);
+      let top = Infinity;
+      for (const s of stack[0].shapes) for (const p of s.outer) if (Math.abs(p.x) < band && p.y < top) top = p.y;
+      if (top === Infinity) top = bb.minY;
+      out.push({ outer: circleRing(h.hang / 2, 28, 0, top + h.hang / 2 + Math.max(3, h.hang)), holes: [] });
+    }
+  }
+  if (h.pins) {
+    const r = shapesFar(stack[stack.length - 1].shapes) * 0.38;
+    out.push({ outer: circleRing(1.5, 20, r, 0), holes: [] }, { outer: circleRing(1.5, 20, -r, 0), holes: [] });
+  }
+  return out;
 }
 
 const stackCache = new WeakMap<Design, BuiltLayer[]>();
@@ -156,15 +186,20 @@ export function buildStack(d: Design): BuiltLayer[] {
   }
   const out: BuiltLayer[] = [];
   if (frame) {
-    out.push({ id: 'plate', name: frame.name || 'Shape', color: d.plateColor, shapes: frame.shapes, own: frame.shapes, isPlate: true, srcIndex: -1 });
+    out.push({ id: 'plate', name: frame.name || 'Shape', color: d.plateColor, shapes: frame.shapes, own: frame.shapes, score: [], isPlate: true, srcIndex: -1 });
   } else if (d.plate !== 'none' && final.length) {
     const footprint = d.solidStack ? final[0] : union(final.flat());
     const p = plateShapes(d, footprint);
-    if (p.length) out.push({ id: 'plate', name: 'Backplate', color: d.plateColor, shapes: p, own: p, isPlate: true, srcIndex: -1 });
+    if (p.length) out.push({ id: 'plate', name: 'Backplate', color: d.plateColor, shapes: p, own: p, score: [], isPlate: true, srcIndex: -1 });
   }
   vis.forEach((x, k) => {
-    if (final[k].length) out.push({ id: x.l.id, name: x.l.name, color: x.l.color, shapes: final[k], own: own[k], isPlate: false, srcIndex: x.i });
+    if (final[k].length) out.push({ id: x.l.id, name: x.l.name, color: x.l.color, shapes: final[k], own: own[k], score: layerScore(x.l, d.customMotifs), isPlate: false, srcIndex: x.i });
   });
+  // through-holes go through every sheet
+  const holes = holeShapes(d, out);
+  if (holes.length) for (const l of out) { l.shapes = difference(l.shapes, holes); l.own = difference(l.own, holes); }
+  // engraving only exists where the sheet is visible material
+  out.forEach((l, i) => { if (l.score.length) l.score = intersect(l.score, i < out.length - 1 ? difference(l.shapes, out[i + 1].shapes) : l.shapes); });
   stackCache.set(d, out);
   return out;
 }

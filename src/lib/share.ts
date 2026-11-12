@@ -35,7 +35,7 @@ export function parseDesign(text: string): Design | null {
     const layers = d.layers.slice(0, 12).map((l: any, i: number) => ({
       id: String(l.id ?? 'l' + i), name: String(l.name ?? `Layer ${i + 1}`).slice(0, 40), color: col(l.color, '#cccccc'), visible: l.visible !== false,
       elements: (Array.isArray(l.elements) ? l.elements : []).slice(0, 60).filter((e: any) => e && ['ring', 'disc', 'stroke'].includes(e.kind)).map((e: any, k: number) => {
-        const base = { id: String(e.id ?? `e${i}-${k}`), op: e.op === 'cut' ? 'cut' : 'add' };
+        const base = { id: String(e.id ?? `e${i}-${k}`), op: e.op === 'cut' ? 'cut' : e.op === 'score' ? 'score' : 'add' };
         if (e.kind === 'ring') return { ...base, kind: 'ring', motif: String(e.motif), count: Math.round(num(e.count, 8, 1, 96)), radius: num(e.radius, 0, 0, 2000), length: num(e.length, 10, 0.2, 4000), width: num(e.width, 10, 0.2, 4000), rotate: num(e.rotate, 0, -3600, 3600), spin: num(e.spin, 0, -3600, 3600), outline: num(e.outline, 0, 0, 500) };
         if (e.kind === 'disc') return { ...base, kind: 'disc', outer: num(e.outer, 10, 0.2, 2000), inner: num(e.inner, 0, 0, 2000), edge: ['plain', 'scallop', 'pointed', 'wave', 'zigzag'].includes(e.edge) ? e.edge : 'plain', lobes: Math.round(num(e.lobes, 12, 2, 200)), depth: num(e.depth, 0, 0, 500), rotate: num(e.rotate, 0, -3600, 3600) };
         return { ...base, kind: 'stroke', size: num(e.size, 3, 0.2, 200), fold: Math.round(num(e.fold, 1, 1, 48)), mirror: !!e.mirror, pts: (Array.isArray(e.pts) ? e.pts : []).slice(0, 4000).map((p: any) => [num(p?.[0], 0, -4000, 4000), num(p?.[1], 0, -4000, 4000), num(p?.[2], 0.5, 0, 1)]) };
@@ -52,6 +52,10 @@ export function parseDesign(text: string): Design | null {
       : null;
     return {
       frame,
+      holes: d.holes ? { centre: num(d.holes.centre, 0, 0, 100), hang: num(d.holes.hang, 0, 0, 30), pins: !!d.holes.pins } : undefined,
+      minFeature: d.minFeature === undefined ? undefined : num(d.minFeature, 1.2, 0.1, 10),
+      sheet: d.sheet ? { w: num(d.sheet.w, 0, 0, 3000), h: num(d.sheet.h, 0, 0, 3000), price: num(d.sheet.price, 0, 0, 100000), speed: num(d.sheet.speed, 10, 0.1, 2000) } : undefined,
+      gen: d.gen && typeof d.gen.style === 'string' ? { style: d.gen.style.slice(0, 20) } : undefined,
       v: 2, name: String(d.name ?? 'My mandala').slice(0, 60), layers, customMotifs,
       thickness: num(d.thickness, 3, 0.2, 30), solidStack: d.solidStack !== false,
       plate: ['none', 'round', 'square', 'hexagon', 'outline'].includes(d.plate) ? d.plate : 'none',

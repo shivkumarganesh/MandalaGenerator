@@ -21,6 +21,7 @@ const TIPS: { title: string; body: string }[] = [
   { title: 'Real-world size', body: 'Everything is in real millimetres (or inches) and exports 1:1 — set Design size to what you want to hang on the wall. Do not rescale the files in your laser software.' },
   { title: 'Cut lines', body: 'Red hairlines are cut through. Blue lines (only if you turn on “Score glue guides”) are scored lightly to show where the next sheet sits. Colours are read by the machine, not by the eye.' },
   { title: 'Made to hold together', body: 'With “Fill under upper layers” on, every piece has a full sheet beneath it to glue to. The “Ready to make?” card flags loose pieces and details too thin to survive the cut, with one-click fixes.' },
+  { title: 'Finishing touches', body: '“Make it a…” adds a hanging hole, a clock-movement hole or alignment-pin holes through every sheet. Any shape can be set to Engrave, which scores its outline instead of cutting it. “Machine & material plan” arranges the layers on your stock sheets and estimates sheets, time and cost.' },
   { title: 'Assembly', body: 'Cut all sheets from the same thickness. Stack in file order, 01 at the bottom, dry-fit, then glue from the bottom up with a thin coat kept 2 mm inside the edges. Press flat while it dries.' },
   ...(IS_ATOMM ? [] : [{ title: '3D printing', body: '“3D print files” gives you the same stack as one STL with filament-swap heights, a multi-colour 3MF, or flat parts to print and glue. Nothing needs supports — every tier rests on the one below.' }]),
 ];

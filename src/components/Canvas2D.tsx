@@ -133,7 +133,12 @@ export default function Canvas2D({ zoomRef, onPct }: { zoomRef: MutableRefObject
             <circle r={content.w / 2} />
           </g>
         )}
-        {shown.map((l) => <path key={l.id} d={pathD(l.shapes)} fill={l.color} fillRule="evenodd" filter={busy || stroke ? undefined : 'url(#lift)'} />)}
+        {shown.map((l) => (
+          <g key={l.id}>
+            <path d={pathD(l.shapes)} fill={l.color} fillRule="evenodd" filter={busy || stroke ? undefined : 'url(#lift)'} />
+            {l.score.length > 0 && <path className="score-line" d={pathD(l.score)} />}
+          </g>
+        ))}
         {sel && selD && <path className={sel.el.op === 'cut' ? 'sel-outline sel-cut' : 'sel-outline'} d={selD} fillRule="evenodd" />}
         {stroke && Array.from({ length: fold }, (_, i) => (
           <g key={i} transform={`rotate(${(i * 360) / fold})`}>

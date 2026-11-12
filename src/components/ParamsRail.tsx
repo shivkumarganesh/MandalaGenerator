@@ -4,8 +4,10 @@ import type { DiscEl, EdgeStyle, Element, Finish, Issue, PlateShape, RingEl, Str
 import { MIN_FEATURE, buildStack, computeStats, designDiameter, scaleDesign, validate } from '../lib/build';
 import { MOTIFS } from '../lib/motifs';
 import { IS_ATOMM, type AtommStatus } from '../lib/atomm';
+import { materialPlan } from '../lib/exportLaser';
+import { MACHINES, PRODUCTS, applyMachine, applyProduct } from '../lib/presets';
 import {
-  addLayer, duplicateElement, findElement, moveElementToLayer, moveLayer, patchDesign, patchElement, patchLayer,
+  addLayer, breakApart, duplicateElement, findElement, moveElementToLayer, moveLayer, patchDesign, patchElement, patchLayer,
   redo, removeElement, removeLayer, reorderElement, resetDesign, setDesign, setUI, undo, useStore,
 } from '../lib/store';
 import { Alert, Card, Icon, Note, Num, Row, SegRow, Segmented, Select, Slider, Swatch, Switch } from './ui';
@@ -49,7 +51,7 @@ function Layers() {
             {active.elements.map((el) => (
               <div key={el.id} role="listitem" className="layer-row el-row" data-active={el.id === ui.selected || undefined}>
                 <button type="button" className="el-pick" aria-pressed={el.id === ui.selected} onClick={() => setUI({ selected: el.id === ui.selected ? null : el.id })}>
-                  <span className="tag">{el.op === 'cut' ? 'Cut' : 'Add'}</span>{elementLabel(el, motifName)}
+                  <span className="tag">{el.op === 'cut' ? 'Cut' : el.op === 'score' ? 'Engrave' : 'Add'}</span>{elementLabel(el, motifName)}
                 </button>
                 <button type="button" className="btn-icon btn-icon-sm" aria-label="Delete shape" onClick={() => removeElement(el.id)}><Icon name="trash" /></button>
               </div>
@@ -76,7 +78,8 @@ function Selected() {
   const motifs = [...MOTIFS.map((m) => ({ id: m.id, label: m.label })), ...design.customMotifs.map((m) => ({ id: 'custom:' + m.id, label: m.name }))];
   return (
     <Card title={el.kind === 'ring' ? 'Selected: motif ring' : el.kind === 'disc' ? 'Selected: disc' : 'Selected: brush stroke'}>
-      <SegRow label="Role" value={el.op} onChange={(v) => set({ op: v })} options={[{ id: 'add', label: 'Material' }, { id: 'cut', label: 'Window' }]} />
+      <SegRow label="Role" value={el.op} onChange={(v) => set({ op: v })} options={[{ id: 'add', label: 'Material' }, { id: 'cut', label: 'Window' }, { id: 'score', label: 'Engrave' }]} />
+      {el.op === 'score' && <Note>Engraved as a blue score line on this layer — visible in 2D design and Cut sheets, not in the 3D preview.</Note>}
       {el.kind === 'ring' && (
         <>
           <Select label="Motif" value={el.motif} options={motifs} onChange={(v) => set({ motif: v })} />
@@ -118,6 +121,11 @@ function Selected() {
           <button type="button" className="btn-icon btn-icon-sm" aria-label="Apply later" onClick={() => reorderElement(el.id, 1)}><Icon name="down" /></button>
         </div>
       </Row>
+      {el.kind === 'ring' && el.count > 1 && (
+        <div className="card-actions">
+          <button type="button" className="btn btn-secondary btn-block" onClick={() => breakApart(el.id)}>Break into {el.count} separate shapes</button>
+        </div>
+      )}
       <div className="card-actions two">
         <button type="button" className="btn btn-secondary" onClick={() => duplicateElement(el.id)}><Icon name="copy" />Duplicate</button>
         <button type="button" className="btn btn-danger" onClick={() => removeElement(el.id)}><Icon name="trash" />Delete</button>
@@ -170,12 +178,74 @@ function Build() {
   );
 }
 
+/** A select that applies a preset when picked, then returns to its prompt. */
+function Apply({ label, prompt, options, onPick }: { label: string; prompt: string; options: { id: string; label: string }[]; onPick: (id: string) => void }) {
+  return (
+    <div className="field-row">
+      <span className="field-label">{label}</span>
+      <span className="select-field">
+        <select className="select wide-select" aria-label={label} value="" onChange={(e) => e.target.value && onPick(e.target.value)}>
+          <option value="">{prompt}</option>
+          {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        <Icon name="chevron" />
+      </span>
+    </div>
+  );
+}
+
+function Finishing() {
+  const design = useStore((s) => s.design);
+  const h = design.holes ?? { centre: 0, hang: 0, pins: false };
+  const set = (p: Partial<typeof h>) => patchDesign({ holes: { ...h, ...p } }, 'holes');
+  const [note, setNote] = useState('');
+  return (
+    <Card title="Make it a…" defaultOpen={false}>
+      <Apply label="Product" prompt="Choose…" options={PRODUCTS} onPick={(id) => { const p = PRODUCTS.find((x) => x.id === id)!; setDesign((d) => applyProduct(d, p)); setNote(p.note); }} />
+      {note && <Note>{note}</Note>}
+      <Num label="Centre hole" value={h.centre} min={0} max={60} step={0.5} onChange={(v) => set({ centre: v })} />
+      <Num label="Hanging hole" value={h.hang} min={0} max={20} step={0.2} onChange={(v) => set({ hang: v })} />
+      <Switch label="Alignment pin holes" checked={h.pins} onChange={(v) => set({ pins: v })} />
+      <Note>Holes go through every sheet. Two 3 mm pins (or toothpicks) keep the layers lined up while the glue sets.</Note>
+    </Card>
+  );
+}
+
+function PlanCard() {
+  const design = useStore((s) => s.design);
+  const unit = useStore((s) => s.ui.unit);
+  const sh = design.sheet ?? { w: 0, h: 0, price: 0, speed: 10 };
+  const set = (p: Partial<typeof sh>) => patchDesign({ sheet: { ...sh, ...p } }, 'sheet');
+  const plan = useMemo(() => materialPlan(design, buildStack(design)), [design]);
+  return (
+    <Card title="Machine & material plan" defaultOpen={false}>
+      <Apply label="Preset" prompt="Choose…" options={MACHINES} onPick={(id) => setDesign((d) => applyMachine(d, MACHINES.find((m) => m.id === id)!))} />
+      <Note>Presets are starting points — confirm kerf and speed with a test cut.</Note>
+      <Num label="Thinnest detail" value={design.minFeature ?? MIN_FEATURE.laser} min={0.2} max={5} step={0.1} onChange={(v) => patchDesign({ minFeature: v }, 'minf')} />
+      <Num label="Stock sheet width" value={sh.w} min={0} max={3000} step={10} onChange={(v) => set({ w: v })} />
+      <Num label="Stock sheet height" value={sh.h} min={0} max={3000} step={10} onChange={(v) => set({ h: v })} />
+      <Num label="Price per sheet" value={sh.price} min={0} max={100000} step={0.5} unit="" onChange={(v) => set({ price: v })} />
+      <Num label="Cut speed (mm/s)" value={sh.speed} min={0.5} max={2000} step={1} unit="" onChange={(v) => set({ speed: v })} />
+      {!plan && <Note>Enter your sheet size to see how many sheets the design needs.</Note>}
+      {plan && (
+        <>
+          <Row label="Sheets needed"><span className="value">{plan.sheets}</span></Row>
+          <Row label="Cutting time (approx.)"><span className="value">{plan.minutes < 90 ? Math.round(plan.minutes) + ' min' : (plan.minutes / 60).toFixed(1) + ' h'}</span></Row>
+          {sh.price > 0 && <Row label="Material cost"><span className="value">{plan.cost.toFixed(2)}</span></Row>}
+          {plan.tooBig.length > 0 && <div className="check-list"><Alert kind="error">{plan.tooBig.join(', ')} {plan.tooBig.length > 1 ? 'do' : 'does'} not fit a {fmtLen(sh.w, unit)} × {fmtLen(sh.h, unit)} sheet. Reduce Design size or use a larger sheet.</Alert></div>}
+          <Note>The export adds a material-plan folder with the layers arranged on these sheets. Time counts cutting moves only.</Note>
+        </>
+      )}
+    </Card>
+  );
+}
+
 export function useChecks() {
   const design = useStore((s) => s.design);
   const [issues, setIssues] = useState<Issue[]>([]);
   useEffect(() => {
     // geometry checks trail the edit by a beat so dragging stays smooth
-    const t = setTimeout(() => setIssues(validate(buildStack(design), MIN_FEATURE.laser, design.solidStack)), 220);
+    const t = setTimeout(() => setIssues(validate(buildStack(design), design.minFeature ?? MIN_FEATURE.laser, design.solidStack)), 220);
     return () => clearTimeout(t);
   }, [design]);
   return issues;
@@ -226,6 +296,8 @@ export default function ParamsRail({ atomm, onExport, onPrint, exporting }: { at
           <Layers />
           <Selected />
           <Build />
+          <Finishing />
+          <PlanCard />
           <Checks issues={issues} />
         </div>
       </div>

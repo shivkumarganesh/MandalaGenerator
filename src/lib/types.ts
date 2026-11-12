@@ -11,7 +11,8 @@ export type Pt = { x: number; y: number };
 export type Ring = Pt[]; // closed, implicit close
 export type Shape = { outer: Ring; holes: Ring[] };
 
-export type Op = 'add' | 'cut';
+/** add = material, cut = window through the sheet, score = engraved outline on the sheet. */
+export type Op = 'add' | 'cut' | 'score';
 
 interface ElBase {
   id: string;
@@ -90,6 +91,13 @@ export interface Design {
   print: { layer: number; base: number }; // mm, 3D-print thickness per tier / of the backplate
   /** Optional outline the whole mandala is grown inside: it becomes the bottom sheet and clips every layer. */
   frame?: Frame | null;
+  /** Through-holes: centre (clock movement), hanging hole near the top, two alignment pins. Diameters in mm, 0 = none. */
+  holes?: { centre: number; hang: number; pins: boolean };
+  minFeature?: number; // mm, thinnest detail the machine can make
+  /** Stock sheet for the material plan; w = 0 turns the plan off. */
+  sheet?: { w: number; h: number; price: number; speed: number };
+  /** How the design was generated, so "More like this" can make a sibling. */
+  gen?: { style: string };
 }
 
 export interface Frame {
@@ -106,6 +114,7 @@ export interface BuiltLayer {
   color: string;
   shapes: Shape[]; // final geometry
   own: Shape[]; // before solid-stack fill
+  score: Shape[]; // engraved outlines on this sheet
   isPlate: boolean;
   srcIndex: number; // index into design.layers, -1 for the backplate
 }

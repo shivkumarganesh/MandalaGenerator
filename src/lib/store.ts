@@ -206,3 +206,18 @@ export function moveLayer(id: string, dir: -1 | 1) {
     return { ...d, layers: ls };
   });
 }
+
+/** Turn a ring of N copies into N single shapes, so each can be moved, restyled or re-layered. */
+export function breakApart(id: string) {
+  const f = findElement(state.design, id);
+  if (!f || f.el.kind !== 'ring' || f.el.count < 2) return;
+  const el = f.el;
+  const parts: Element[] = Array.from({ length: el.count }, (_, i) => ({ ...el, id: uid(), count: 1, rotate: +(el.rotate + (i * 360) / el.count).toFixed(3) }));
+  setDesign((d) => mapLayers(d, (l) => {
+    const i = l.elements.findIndex((e) => e.id === id);
+    if (i < 0) return l;
+    const els = l.elements.slice(); els.splice(i, 1, ...parts);
+    return { ...l, elements: els };
+  }));
+  setUI({ selected: parts[0].id });
+}

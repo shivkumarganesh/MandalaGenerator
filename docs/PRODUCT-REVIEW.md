@@ -73,3 +73,26 @@ Reference pieces (Etsy / Sofontsy cut files, wood wall art) share five traits. H
 | Swirls and paisley spirals | Swirl style spins each motif off-axis |
 
 Not matched yet: free-flowing asymmetric compositions (the wave and mountain panels), multi-panel triptychs, a crescent overlapping the mandala, and hand-drawn scrollwork. Those need a curve-based ornament generator rather than radial rings; the brush and SVG import are the current route to them.
+
+## 7. No-backend feature batch — status
+
+| # | Feature | Status |
+|---|---|---|
+| 1 | Other products | **Built** as presets: wall art, clock, coaster, ornament, earring, trivet (size + holes). No product-specific geometry (clock numerals, lamp panels, box lids). |
+| 2 | Other machines | **Partly.** Filled-colour SVG for Cricut / Silhouette and a cardstock preset. Not built: CNC corner relief, stencil bridges. |
+| 3 | Engraving | **Built** as score lines (outlines). Not built: filled engraving patterns; not shown in the 3D preview. |
+| 4 | Print and colour | **Built**: colouring page (PNG). No PDF poster. |
+| 5 | Free-flowing compositions | **Not built.** Needs a new curve-based generator. |
+| 6 | Shape-aware filling | **Not built.** Shapes still clip a radial mandala. |
+| 7 | Fonts and monograms | **Partly.** Four lettering styles from fonts on the device. Not built: bundled fonts, text on a curve. |
+| 8 | Photo to layers | **Built**: 2–6 tonal layers. Threshold-based, so it suits clear, well-lit photos. |
+| 9 | Edit one copy | **Built**: break a ring apart. Not built: reshaping a motif with handles. |
+| 10 | Smarter Surprise me | **Built**: More like this (keeps style, layers, colours). Not built: locking individual rings. |
+| 11 | Material and cost planner | **Built**: whole layers shelf-packed onto stock sheets; sheets, time, cost. Pieces are not packed individually or rotated. |
+| 12 | Assembly help | **Built**: alignment-pin holes and a printable step-by-step guide. Not built: engraved layer numbers. |
+| 13 | Finishing extras | **Partly.** Hanging hole and centre hole. Not built: desk stand, LED spacer layer. |
+| 14 | Machine presets | **Built**: five presets with typical values; they are starting points, not calibrated numbers. |
+| 15 | Community gallery | Needs a backend — not attempted. |
+| 16 | Share-ready output | **Partly.** Turntable video (WebM, or MP4 where the browser records it). No build time-lapse. |
+| 17 | Phone and tablet layout | **Not built** beyond the existing stacked layout. |
+| 18 | Languages | **Not built.** |

@@ -2,7 +2,9 @@
 // build → validate → laser SVG → mesh code, with assertions on the output.
 import { TEMPLATES, STYLES, generate } from '../src/lib/recipes';
 import { buildStack, validate, computeStats, scaleDesign, designDiameter } from '../src/lib/build';
-import { cutLayers, layerSvg, sheetSvg } from '../src/lib/exportLaser';
+import { assemblyGuide, coloringSvg, craftSvg, cutLayers, layerSvg, materialPlan, nestSheets, sheetSvg } from '../src/lib/exportLaser';
+import { pointInShapes } from '../src/lib/geom';
+const pointIn = (s: Parameters<typeof pointInShapes>[1]) => pointInShapes({ x: 0, y: 0 }, s);
 import { printTiers } from '../src/lib/export3d';
 import { fusedBody, slab } from '../src/lib/mesh';
 import { parseDesign } from '../src/lib/share';
@@ -74,6 +76,30 @@ for (const d0 of designs) {
   check(!!back && JSON.stringify(buildStack(back)) === JSON.stringify(buildStack(d0)), `${d0.name}: project file round-trip changed the geometry`);
   const big = scaleDesign(d0, 1.5);
   check(Math.abs(designDiameter(big) - designDiameter(d0) * 1.5) < 0.5, `${d0.name}: scaling is not proportional`);
+}
+// finishing, engraving and the material plan
+{
+  const base = generate(4242, 'filigree', 'wood', 5);
+  const plain = buildStack(base);
+  const holed = buildStack({ ...base, holes: { centre: 8, hang: 4, pins: true } });
+  check(holed.every((l, i) => area(l.shapes) < area(plain[i].shapes) || !pointIn(plain[i].shapes)), 'holes should remove material from sheets that cover the centre');
+  check(holed.every((l) => !pointIn(l.shapes)), 'centre hole must go through every sheet');
+  const eng = { ...base, layers: base.layers.map((l, i) => (i === 0 ? { ...l, elements: [...l.elements, { id: 'sc', kind: 'ring' as const, op: 'score' as const, motif: 'star', count: 8, radius: 80, length: 10, width: 10, rotate: 0, spin: 0, outline: 0 }] } : l)) };
+  const es = buildStack(eng);
+  check(Math.abs(area(es[0].shapes) - area(plain[0].shapes)) < 0.01, 'engraving must not change the sheet outline');
+  check(es[0].score.length > 0, 'engraved shapes should reach the built layer');
+  check(cutLayers(eng, es)[0].score.length > 0 && layerSvg(cutLayers(eng, es)[0]).includes('#0000FF'), 'engraving should export as blue score lines');
+  const cuts = cutLayers(base, plain);
+  const nest = nestSheets(cuts, 400, 400);
+  check(nest.sheets.flat().length === cuts.length && nest.tooBig.length === 0, 'every layer should be placed on a 400 mm sheet');
+  check(nest.sheets.every((sh) => sh.every((c) => c.x + c.c.w <= 400 && c.y + c.c.h <= 400)), 'nested layers must stay inside the sheet');
+  check(nest.sheets.every((sh) => sh.every((a, i) => sh.every((b, j) => i === j || a.x + a.c.w <= b.x || b.x + b.c.w <= a.x || a.y + a.c.h <= b.y || b.y + b.c.h <= a.y))), 'nested layers must not overlap');
+  check(nestSheets(cuts, 100, 100).tooBig.length === cuts.length, 'layers larger than the sheet must be reported');
+  const plan = materialPlan({ ...base, sheet: { w: 400, h: 400, price: 5, speed: 10 } }, plain)!;
+  check(plan.sheets === nest.sheets.length && plan.cost === plan.sheets * 5 && plan.minutes > 1, 'material plan numbers');
+  check(craftSvg(plain).includes('fill="#') && coloringSvg(plain).includes('stroke="#111111"') && assemblyGuide(base, plain).includes('Step ' + plain.length), 'extra outputs');
+  const back = parseDesign(JSON.stringify({ ...eng, holes: { centre: 8, hang: 4, pins: true }, sheet: { w: 400, h: 400, price: 5, speed: 10 }, minFeature: 1 }))!;
+  check(back.holes?.centre === 8 && back.sheet?.w === 400 && back.minFeature === 1 && back.layers[0].elements.some((e) => e.op === 'score'), 'new settings must survive a project round-trip');
 }
 check(TEMPLATES.length >= 20 && new Set(TEMPLATES.map((t) => t.id)).size === TEMPLATES.length, 'expected 20+ unique templates');
 // every style, many seeds: no two designs alike, none broken

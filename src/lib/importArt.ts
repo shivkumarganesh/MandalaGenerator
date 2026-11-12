@@ -17,8 +17,8 @@ function countPoints(shapes: Shape[]) {
 }
 
 /** Centre on the origin, fit into the unit box (like the built-in motifs) and thin out points until it is light. */
-export function toMotif(shapes: Shape[], name: string): CustomMotif {
-  const bb = bbox(shapes);
+export function toMotif(shapes: Shape[], name: string, box?: { minX: number; minY: number; maxX: number; maxY: number }): CustomMotif {
+  const bb = box ?? bbox(shapes);
   if (!bb) throw new Error('No closed shapes were found in that file.');
   const w = bb.maxX - bb.minX, h = bb.maxY - bb.minY, k = 1 / Math.max(w, h, 1e-9);
   const cx = (bb.minX + bb.maxX) / 2, cy = (bb.minY + bb.maxY) / 2;
@@ -203,7 +203,7 @@ export function traceImageData(img: ImageData, opt: TraceOptions): Shape[] {
     mask[i] = (v < opt.threshold) !== opt.invert ? 1 : 0;
   }
   const rings = traceMask(mask, w, h).map((r) => smooth(r));
-  return clean(fromRingsEvenOdd(rings), 0.35).filter((s) => s.outer.length >= 6);
+  return clean(fromRingsEvenOdd(rings), 0.12).filter((s) => s.outer.length >= 6);
 }
 
 export async function loadBitmap(file: Blob, maxSide = 420): Promise<ImageData> {
@@ -216,11 +216,33 @@ export async function loadBitmap(file: Blob, maxSide = 420): Promise<ImageData> 
   return ctx.getImageData(0, 0, c.width, c.height);
 }
 
-/** Type → artwork: rendered large with the system's boldest face, then traced. */
-export function textToMotif(text: string): CustomMotif {
+/**
+ * Photo → tonal layers: `levels` silhouettes from "everything but the highlights" down to "only
+ * the darkest shadows". They share one frame, so stacked on successive layers they register.
+ */
+export function photoLevels(img: ImageData, levels: number, name: string): CustomMotif[] {
+  const box = { minX: 0, minY: 0, maxX: img.width, maxY: img.height };
+  const out: CustomMotif[] = [];
+  for (let k = 0; k < levels; k++) {
+    const threshold = 0.86 - (k / Math.max(1, levels - 1)) * 0.62; // 0.86 … 0.24
+    const shapes = traceImageData(img, { threshold, invert: false });
+    if (shapes.length) out.push(toMotif(shapes, `${name.replace(/\.[a-z0-9]+$/i, '')} tone ${k + 1}`, box));
+  }
+  return out;
+}
+
+export const FONTS: { id: string; label: string; css: string }[] = [
+  { id: 'bold', label: 'Bold', css: '900 200px "Arial Rounded MT Bold", "Arial Black", "Segoe UI", system-ui, sans-serif' },
+  { id: 'serif', label: 'Serif', css: '700 200px Georgia, "Times New Roman", "Noto Serif", serif' },
+  { id: 'script', label: 'Script', css: '700 200px "Snell Roundhand", "Segoe Script", "Brush Script MT", "Apple Chancery", cursive' },
+  { id: 'slab', label: 'Typewriter', css: '700 200px "Courier New", Courier, monospace' },
+];
+
+/** Type → artwork: rendered large in a face installed on this device, then traced. */
+export function textToMotif(text: string, fontId = 'bold'): CustomMotif {
   const c = document.createElement('canvas');
   const ctx = c.getContext('2d', { willReadFrequently: true })!;
-  const font = '900 200px "Arial Rounded MT Bold", "Arial Black", "Segoe UI", system-ui, sans-serif';
+  const font = (FONTS.find((f) => f.id === fontId) ?? FONTS[0]).css;
   ctx.font = font;
   const m = ctx.measureText(text);
   c.width = Math.min(4000, Math.ceil(m.width) + 40); c.height = 300;

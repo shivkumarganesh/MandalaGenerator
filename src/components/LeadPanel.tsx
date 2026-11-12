@@ -5,7 +5,10 @@ import { buildStack, designDiameter } from '../lib/build';
 import { bbox, pathD } from '../lib/geom';
 import { MOTIFS } from '../lib/motifs';
 import { PALETTES, STYLES, STYLE_LABELS, TEMPLATES, applyPalette, disc, emptyDesign, generate, ring, type Style, type Template } from '../lib/recipes';
-import { importSvg, loadBitmap, textToMotif, toMotif, traceImageData } from '../lib/importArt';
+import { FONTS, importSvg, loadBitmap, photoLevels, textToMotif, toMotif, traceImageData } from '../lib/importArt';
+import { coloringSvg } from '../lib/exportLaser';
+import { turntable } from '../lib/turntable';
+import { layer as mkLayer, paletteColors } from '../lib/recipes';
 import { download, previewSvg, slugName, svgToPng } from '../lib/exportLaser';
 import { encodeDesign, parseDesign } from '../lib/share';
 import { IS_ATOMM } from '../lib/atomm';
@@ -64,9 +67,20 @@ function loadGenerated(d: Design) {
   loadDesign(fitToFrame(d, getState().design.frame));
 }
 
-function surprise() {
+/** New design. `like` keeps the current design's style, layer count and colours. */
+function surprise(like = false) {
   const { genLayers, genStyle } = getState().ui;
-  loadGenerated(generate(Math.floor(Math.random() * 2 ** 31), (genStyle || undefined) as Style | undefined, undefined, genLayers || undefined));
+  const cur = getState().design;
+  const style = like ? cur.gen?.style ?? genStyle : genStyle;
+  const layers = like ? cur.layers.length : genLayers;
+  let d = generate(Math.floor(Math.random() * 2 ** 31), (style || undefined) as Style | undefined, undefined, layers || undefined);
+  if (like && cur.layers.length) {
+    const cols = cur.layers.map((l) => l.color);
+    d = { ...d, finish: cur.finish, plateColor: cur.plateColor, layers: d.layers.map((l, i) => ({ ...l, color: cols[Math.min(i, cols.length - 1)] })) };
+  }
+  // finishing choices belong to the project, not to one roll of the dice
+  d = { ...d, holes: cur.holes, sheet: cur.sheet, minFeature: cur.minFeature, thickness: cur.thickness, kerf: cur.kerf };
+  loadGenerated(d);
 }
 
 function FrameIcon({ id }: { id: string }) {
@@ -138,8 +152,9 @@ function Templates() {
           <Segmented label="Layers per design" value={String(genLayers)} onChange={(v) => setUI({ genLayers: +v })}
             options={LAYER_CHOICES.map((n) => ({ id: String(n), label: n ? String(n) : 'Any' }))} />
         </div>
-        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={surprise}><Icon name="sparkle" />Surprise me</button>
-        <p className="field-note flush">Every press is a new {genStyle ? STYLE_LABELS[genStyle as Style].toLowerCase() : 'design'}{genLayers ? ` with ${genLayers} layers` : ''}{design.frame ? ` inside your ${design.frame.name.toLowerCase()}` : ''}. Undo brings the last one back.</p>
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => surprise()}><Icon name="sparkle" />Surprise me</button>
+        <button type="button" className="btn btn-secondary btn-block" disabled={!design.layers.length} onClick={() => surprise(true)}>More like this</button>
+        <p className="field-note flush">Every press is a new {genStyle ? STYLE_LABELS[genStyle as Style].toLowerCase() : 'design'}{genLayers ? ` with ${genLayers} layers` : ''}{design.frame ? ` inside your ${design.frame.name.toLowerCase()}` : ''}. “More like this” keeps the style, layer count and colours. Undo brings the last one back.</p>
         <div className="rail-section">
           <h4>Colours</h4>
           <div className="palette-grid" role="group" aria-label="Colour palette">
@@ -274,6 +289,8 @@ function Import() {
   const [threshold, setThreshold] = useState(50);
   const [invert, setInvert] = useState(false);
   const [text, setText] = useState('');
+  const [font, setFont] = useState('bold');
+  const [tones, setTones] = useState(4);
 
   const traced = useMemo(() => (bitmap ? traceImageData(bitmap.img, { threshold: threshold / 100, invert }) : []), [bitmap, threshold, invert]);
 
@@ -320,6 +337,23 @@ function Import() {
               <Segmented label="Keep" value={invert ? 'light' : 'dark'} onChange={(v) => setInvert(v === 'light')} options={[{ id: 'dark', label: 'Dark areas' }, { id: 'light', label: 'Light areas' }]} /></div>
           </div>
           <button type="button" className="btn btn-primary btn-block" disabled={!traced.length} onClick={() => { try { place(toMotif(traced, bitmap.name)); setBitmap(null); } catch (e) { setErr(e instanceof Error ? e.message : 'Trace failed.'); } }}>Add to design</button>
+          <div className="rail-fields">
+            <Slider label="Photo tones" value={tones} min={2} max={6} onChange={setTones} format={(v) => v + ' layers'} />
+          </div>
+          <button type="button" className="btn btn-secondary btn-block" onClick={() => {
+            try {
+              const motifs = photoLevels(bitmap.img, tones, bitmap.name);
+              if (motifs.length < 2) throw new Error('This picture has too little contrast to split into tones.');
+              const aspect = bitmap.img.width / bitmap.img.height, size = 160;
+              const w = aspect >= 1 ? size : size * aspect, h = aspect >= 1 ? size / aspect : size;
+              const cols = paletteColors(PALETTES.find((p) => p.id === 'mono')!, motifs.length + 1).reverse();
+              const layers = [mkLayer('Paper', cols[0], [ring({ motif: 'square', count: 1, radius: 0, length: h, width: w })]),
+                ...motifs.map((m, i) => mkLayer(`Tone ${i + 1}`, cols[i + 1], [ring({ motif: 'custom:' + m.id, count: 1, radius: 0, length: h, width: w })]))];
+              loadDesign({ ...emptyDesign(), name: bitmap.name.replace(/\.[a-z0-9]+$/i, '') + ' portrait', layers, customMotifs: motifs, finish: 'painted', solidStack: false });
+              setBitmap(null); toast('Layered portrait built — lightest sheet at the bottom');
+            } catch (e) { setErr(e instanceof Error ? e.message : 'Could not build the portrait.'); }
+          }}>Build a layered portrait instead</button>
+          <p className="field-note flush">A portrait replaces the current design with one layer per tone, dark on top. Undo brings your design back.</p>
         </div>
       )}
 
@@ -327,8 +361,10 @@ function Import() {
         <h4>Name or word</h4>
         <div className="inline-form">
           <input className="input grow" value={text} maxLength={24} placeholder="e.g. Maya" aria-label="Text to add" onChange={(e) => setText(e.target.value)} />
-          <button type="button" className="btn btn-secondary" disabled={!text.trim()} onClick={() => { try { place(textToMotif(text.trim())); setText(''); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not add text.'); } }}>Add</button>
+          <button type="button" className="btn btn-secondary" disabled={!text.trim()} onClick={() => { try { place(textToMotif(text.trim(), font)); setText(''); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not add text.'); } }}>Add</button>
         </div>
+        <Segmented label="Lettering" value={font} onChange={setFont} options={FONTS.map((f) => ({ id: f.id, label: f.label }))} />
+        <p className="field-note flush">Lettering uses fonts installed on this device, so Script looks different from one computer to the next.</p>
       </div>
 
       {custom.length > 0 && <Artwork custom={custom} />}
@@ -341,6 +377,7 @@ function Project() {
   const name = useStore((s) => s.design.name);
   const fileRef = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
   const cur = () => getState().design;
   return (
     <div className="gen-rail-content">
@@ -354,6 +391,24 @@ function Project() {
           try { download(await svgToPng(previewSvg(buildStack(cur()), 1600, '#f6f6f7')), slugName(cur()) + '.png'); toast('Picture saved'); }
           catch { toast('Could not render the picture'); }
         }}><Icon name="image" />Save a picture</button>
+        <button type="button" className="btn btn-secondary btn-block" onClick={async () => {
+          try { download(await svgToPng(coloringSvg(buildStack(cur()), 2000)), slugName(cur()) + '-colouring-page.png'); toast('Colouring page saved'); }
+          catch { toast('Could not render the page'); }
+        }}><Icon name="brush" />Save a colouring page</button>
+        <button type="button" className="btn btn-secondary btn-block" disabled={recording} onClick={async () => {
+          if (recording) return;
+          setRecording(true);
+          try {
+            setUI({ view: '3d', explode: 0 });
+            for (let i = 0; i < 40 && !turntable.record; i++) await new Promise((r) => setTimeout(r, 150)); // wait for the 3D view to load
+            if (!turntable.record) throw new Error('3D view not ready');
+            await new Promise((r) => setTimeout(r, 500));
+            const blob = await turntable.record(6);
+            download(blob, slugName(cur()) + '-turntable.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'));
+            toast('Turntable video saved');
+          } catch { toast('This browser could not record the video'); }
+          setRecording(false);
+        }}><Icon name="cube" />{recording ? 'Recording 6 seconds…' : 'Record a turntable video'}</button>
         {!IS_ATOMM && (
           <button type="button" className="btn btn-secondary btn-block" onClick={async () => {
             try {

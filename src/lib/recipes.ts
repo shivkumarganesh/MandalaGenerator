@@ -266,7 +266,7 @@ export function generate(seed: number, style?: Style, paletteId?: string, layers
   const cfg = TIERS[st];
   const built = FILIGREE.includes(st) ? filigree(st, rnd, count) : cfg ? tiers(st, cfg, rnd, count) : windows(st, rnd, count);
   const pal = PALETTES.find((p) => p.id === paletteId) ?? PALETTES[Math.floor(rnd() * PALETTES.length)];
-  const d = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala' };
+  const d: Design = { ...emptyDesign(), layers: built, name: STYLE_LABELS[st] + ' mandala', gen: { style: st } };
   return applyPalette(d, pal);
 }
 

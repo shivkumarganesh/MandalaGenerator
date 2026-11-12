@@ -13,6 +13,7 @@ import { slab } from '../lib/mesh';
 import type { BuiltLayer, Design } from '../lib/types';
 import { useStore } from '../lib/store';
 import type { ZoomApi } from './panzoom';
+import { turntable } from '../lib/turntable';
 
 const GRAIN_MM = 45; // one tile of the grain texture spans this many mm
 
@@ -156,6 +157,22 @@ export default function Preview3D({ zoomRef, onPct }: { zoomRef: MutableRefObjec
       zoomTo: (pct) => { const dir = camera.position.clone().sub(controls.target); camera.position.copy(controls.target).add(dir.setLength(THREE.MathUtils.clamp(defaultDist / (pct / 100), controls.minDistance, controls.maxDistance))); },
       fit: frame,
     };
+    // one full turn, captured straight from the canvas
+    turntable.record = (seconds) => new Promise<Blob>((resolve, reject) => {
+      try {
+        const type = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find((t) => MediaRecorder.isTypeSupported(t));
+        if (!type) throw new Error('This browser cannot record video.');
+        const rec = new MediaRecorder(renderer.domElement.captureStream(30), { mimeType: type, videoBitsPerSecond: 6_000_000 });
+        const chunks: Blob[] = [];
+        rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+        rec.onstop = () => { controls.autoRotate = false; resolve(new Blob(chunks, { type })); };
+        frame();
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 60 / seconds; // 2.0 = one turn per 30 s
+        rec.start();
+        setTimeout(() => rec.stop(), seconds * 1000);
+      } catch (e) { reject(e); }
+    });
     let lastPct = -1;
     const report = () => {
       const pct = Math.round(((defaultDist / camera.position.distanceTo(controls.target)) * 100) / 5) * 5;
@@ -211,7 +228,7 @@ export default function Preview3D({ zoomRef, onPct }: { zoomRef: MutableRefObjec
       grain.dispose(); envRT.dispose(); pmrem.dispose();
       controls.dispose(); renderer.dispose();
       renderer.domElement.remove();
-      zoomRef.current = null; api.current = null;
+      zoomRef.current = null; api.current = null; turntable.record = null;
     };
   }, [zoomRef, onPct]);
 
