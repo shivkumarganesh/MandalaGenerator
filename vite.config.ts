@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { fileURLToPath } from 'node:url';
 
 // Two products from one source:
 //   VITE_TARGET=atomm      -> dist-atomm/       code-split build for the Atomm platform (laser only)
@@ -22,6 +23,8 @@ function atommSdk(): Plugin {
 
 export default defineConfig({
   base: './',
+  // each build bundles only the Guide screenshots taken from that build
+  resolve: { alias: { 'guide-shots': fileURLToPath(new URL(`./src/guide/index.${target}.ts`, import.meta.url)) } },
   define: { 'import.meta.env.VITE_TARGET': JSON.stringify(target) },
   plugins: [react(), atommSdk(), ...(target === 'standalone' ? [viteSingleFile()] : [])],
   // The source entry is app.html: the repository root index.html is the BUILT standalone app,

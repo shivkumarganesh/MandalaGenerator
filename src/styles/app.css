@@ -119,7 +119,7 @@
 [dir="rtl"] .guide-link[aria-current="page"] { box-shadow: inset -2px 0 0 var(--color-brand-default); }
 .guide-jump { display: none; }
 .guide-body { flex: 1; min-width: 0; overflow-y: auto; scrollbar-width: thin; padding: var(--space-300) 32px; outline: none; }
-.guide-body > * { max-width: 640px; }
+.guide-page > * { max-width: 640px; }
 .guide-crumb { margin: 0 0 var(--space-50); font: var(--font-12-medium); color: var(--color-text-tertiary); }
 .guide-body h2 { margin: 0 0 var(--space-200); font: 600 20px / 26px var(--font-sans); color: var(--color-text-primary); }
 .guide-body h3 { margin: var(--space-300) 0 var(--space-100); font: var(--font-14-medium); color: var(--color-text-primary); }
@@ -156,3 +156,31 @@
   .guide-body { padding: var(--space-200); }
   .guide-start { flex-direction: column; align-items: flex-start; }
 }
+
+/* Guide pictures */
+.guide-fig { margin: 0 0 var(--space-200); }
+.guide-fig img { display: block; max-width: 100%; height: auto; border: 1px solid var(--color-stroke-default); border-radius: var(--radius-large); background: var(--color-bg-editor); }
+.guide-fig.side { display: flex; gap: var(--space-300); align-items: flex-start; }
+.guide-fig.side img { flex: none; width: 46%; max-width: 300px; }
+.guide-fig.side figcaption { flex: 1; min-width: 0; padding-top: var(--space-50); }
+.guide-fig:not(.side) figcaption { margin-top: var(--space-150); }
+.guide-cap { margin: 0 !important; font: var(--font-12-regular) !important; color: var(--color-text-tertiary) !important; }
+.guide-legend { list-style: none; margin: 0; padding: 0; counter-reset: mark; display: grid; grid-template-columns: 1fr; gap: var(--space-75); }
+.guide-fig:not(.side) .guide-legend, .guide-legend.wide { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--space-75) var(--space-200); }
+.guide-legend.wide { margin-bottom: var(--space-200); }
+.guide-legend > li { counter-increment: mark; display: flex; align-items: flex-start; gap: var(--space-100); font: 400 13px / 20px var(--font-sans); color: var(--color-text-secondary); }
+.guide-legend > li::before { content: counter(mark); flex: none; width: 20px; height: 20px; display: grid; place-items: center; border-radius: var(--radius-circle); background: var(--color-blue-default); color: var(--color-text-inverse); font: 600 11px / 1 var(--font-sans); }
+.guide-pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-200); max-width: 520px; }
+.guide-pair .guide-fig { margin-bottom: var(--space-150); }
+.guide-samples { display: flex; flex-wrap: wrap; gap: var(--space-200); margin: 0 0 var(--space-200); }
+.guide-mini { margin: 0; width: 150px; }
+.guide-mini svg { display: block; width: 150px; height: 150px; padding: var(--space-100); background: var(--color-bg-editor); border: 1px solid var(--color-stroke-divider); border-radius: var(--radius-large); }
+.guide-mini figcaption { margin-top: var(--space-75); font: var(--font-12-regular); color: var(--color-text-secondary); }
+@media (max-width: 720px) {
+  .guide-fig.side { flex-direction: column; gap: var(--space-150); }
+  .guide-fig.side img { width: 100%; max-width: 300px; }
+  .guide-mini, .guide-mini svg { width: 130px; } .guide-mini svg { height: 130px; }
+}
+/* a lone sample (the picture of what a recipe makes) is shown larger */
+.guide-mini:only-child, .guide-mini:only-child svg { width: 240px; }
+.guide-mini:only-child svg { height: 240px; }
