@@ -82,7 +82,7 @@ function Selected() {
   return (
     <Card title={el.kind === 'ring' ? 'Selected: motif ring' : el.kind === 'disc' ? 'Selected: disc' : el.kind === 'curve' ? 'Selected: pattern curve' : 'Selected: brush stroke'}>
       <SegRow label="Role" value={el.op} onChange={(v) => set({ op: v })} options={[{ id: 'add', label: 'Material' }, { id: 'cut', label: 'Window' }, { id: 'score', label: 'Engrave' }]} />
-      {el.op === 'score' && <Note>Engraved as a blue score line on this layer — visible in 2D design and Cut sheets, not in the 3D preview.</Note>}
+      {el.op === 'score' && <Note>Engraved as a blue score line on this layer. It only shows where the layer is not covered by the ones above.</Note>}
       {el.kind === 'ring' && (
         <>
           <Select label="Motif" value={el.motif} options={motifs} onChange={(v) => set({ motif: v })} />
@@ -224,8 +224,13 @@ function Finishing() {
       {design.product === 'clock' && (
         <>
           <Preset label="Clock dial" none="None" value={design.dial ?? ''} options={DIALS.filter((x) => x.id !== 'none')} onPick={(id) => setDesign((d) => applyDial(d, id || 'none'))} />
-          {design.dial && <Switch label="Ring behind the dial" checked={wantsDialRing(design)} onChange={(v) => setDesign((d) => applyDial({ ...d, dialRing: v }, d.dial ?? 'ticks'))} />}
-          <Note>The dial is added on top as its own layer, so you can recolour it or select its marks and move them. The ring keeps the marks readable over a busy pattern, and is switched on automatically when some marks would otherwise have nothing beneath them.</Note>
+          <Switch label="Dial on the back layer only" checked={!!design.dialBack} onChange={(v) => setDesign((d) => applyDial({ ...d, dialBack: v }, d.dial ?? 'ticks'))} />
+          {design.dial && !design.dialBack && <Switch label="Ring behind the dial" checked={wantsDialRing(design)} onChange={(v) => setDesign((d) => applyDial({ ...d, dialRing: v }, d.dial ?? 'ticks'))} />}
+          <Note>{design.dialBack
+            ? 'On: the dial is engraved on the back sheet, and no dial layer is added. Marks only show where the back sheet is not covered by the layers above.'
+            : 'Off: the dial is added on top as its own layer, which you can recolour. The ring keeps the marks readable over a busy pattern and switches on by itself when marks would have nothing beneath them.'}</Note>
+          <Switch label="Show clock hands" checked={!!design.hands} onChange={(v) => patchDesign({ hands: v })} />
+          <Note>The hands are a preview only, to judge the look. They are not part of the cut files.</Note>
         </>
       )}
       {design.theme === 'christmas' && (

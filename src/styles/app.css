@@ -184,3 +184,7 @@
 /* a lone sample (the picture of what a recipe makes) is shown larger */
 .guide-mini:only-child, .guide-mini:only-child svg { width: 240px; }
 .guide-mini:only-child svg { height: 240px; }
+
+/* clock hands: preview only */
+.clock-hands path { fill: var(--color-text-primary); pointer-events: none; }
+.clock-hands .cap { fill: var(--color-text-secondary); }

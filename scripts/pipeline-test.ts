@@ -155,6 +155,27 @@ check(!templateDesign(TEMPLATES.find((x) => !x.group)!).theme, 'non-Christmas te
     check(!applyProduct(c, null).product, 'choosing Custom clears the product');
   }
   check(applyMachine(generate(1, 'lotus'), MACHINES[0]).machine === MACHINES[0].id, 'machine preset should be remembered');
+  // "dial on the back layer only": engraved on the bottom sheet, no extra layer; hands are preview-only
+  for (const st of ['lotus', 'sunburst', 'filigree'] as const) {
+    const base = generate(7300, st, 'wood', 5), c = applyProduct(base, clock);
+    check(c.hands === true, `${st}: a clock should show its hands by default`);
+    for (const dl of DIALS.filter((x) => x.id !== 'none')) {
+      const back = applyDial({ ...c, dialBack: true }, dl.id);
+      check(back.layers.length === base.layers.length && back.layers.every((l) => l.tag !== 'dial'), `${st}/${dl.id}: back-layer dial must not add a layer`);
+      check(back.layers[0].elements.filter((e) => e.tag === 'dial').length > 0 && back.layers.slice(1).every((l) => l.elements.every((e) => e.tag !== 'dial')), `${st}/${dl.id}: dial marks belong on the bottom layer only`);
+      check(back.layers[0].elements.filter((e) => e.tag === 'dial').every((e) => e.op === 'score'), `${st}/${dl.id}: back-layer marks are engraved`);
+      const plainStack = buildStack(applyDial(c, 'none')), stack = buildStack(back);
+      check(stack.every((l, i) => Math.abs(area(l.shapes) - area(plainStack[i].shapes)) < 0.01), `${st}/${dl.id}: engraving the dial must not change any sheet's outline`);
+      check(!validate(stack, 1.2, back.solidStack).some((x) => x.level === 'error'), `${st}/${dl.id}: back-layer dial causes blocking issues`);
+      const again = applyDial({ ...back, dialBack: false }, dl.id);
+      check(again.layers[0].elements.every((e) => e.tag !== 'dial') && again.layers.some((l) => l.tag === 'dial'), `${st}/${dl.id}: switching back should move the dial to its own layer`);
+      const rt = parseDesign(JSON.stringify(back))!;
+      check(rt.dialBack === true && rt.hands === true && rt.layers[0].elements.filter((e) => e.tag === 'dial').length === back.layers[0].elements.filter((e) => e.tag === 'dial').length, `${st}/${dl.id}: back-layer dial must survive a project round-trip`);
+      check(applyDial(back, 'none').layers[0].elements.length === base.layers[0].elements.length, `${st}/${dl.id}: removing the dial must clean the bottom layer`);
+    }
+    check(buildStack(applyDial({ ...c, dialBack: true }, 'ticks'))[0].score.length > 0 || st === 'filigree', `${st}: hour marks should be visible on the back sheet`);
+    check(JSON.stringify(buildStack({ ...c, hands: false })) === JSON.stringify(buildStack({ ...c, hands: true })), `${st}: clock hands must never change the geometry`);
+  }
 }
 check(TEMPLATES.length >= 20 && new Set(TEMPLATES.map((t) => t.id)).size === TEMPLATES.length, 'expected 20+ unique templates');
 // every style, many seeds: no two designs alike, none broken

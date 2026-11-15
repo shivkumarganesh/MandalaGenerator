@@ -35,7 +35,7 @@ export function parseDesign(text: string): Design | null {
     const layers = d.layers.slice(0, 12).map((l: any, i: number) => ({
       id: String(l.id ?? 'l' + i), name: String(l.name ?? `Layer ${i + 1}`).slice(0, 40), color: col(l.color, '#cccccc'), visible: l.visible !== false, ...(l.tag === 'dial' ? { tag: 'dial' } : {}),
       elements: (Array.isArray(l.elements) ? l.elements : []).slice(0, 60).filter((e: any) => e && ['ring', 'disc', 'stroke', 'curve'].includes(e.kind)).map((e: any, k: number) => {
-        const base = { id: String(e.id ?? `e${i}-${k}`), op: e.op === 'cut' ? 'cut' : e.op === 'score' ? 'score' : 'add' };
+        const base = { id: String(e.id ?? `e${i}-${k}`), op: e.op === 'cut' ? 'cut' : e.op === 'score' ? 'score' : 'add', ...(e.tag === 'dial' ? { tag: 'dial' } : {}) };
         if (e.kind === 'ring') return { ...base, kind: 'ring', motif: String(e.motif), count: Math.round(num(e.count, 8, 1, 96)), radius: num(e.radius, 0, 0, 2000), length: num(e.length, 10, 0.2, 4000), width: num(e.width, 10, 0.2, 4000), rotate: num(e.rotate, 0, -3600, 3600), spin: num(e.spin, 0, -3600, 3600), outline: num(e.outline, 0, 0, 500) };
         if (e.kind === 'disc') return { ...base, kind: 'disc', outer: num(e.outer, 10, 0.2, 2000), inner: num(e.inner, 0, 0, 2000), edge: ['plain', 'scallop', 'pointed', 'wave', 'zigzag'].includes(e.edge) ? e.edge : 'plain', lobes: Math.round(num(e.lobes, 12, 2, 200)), depth: num(e.depth, 0, 0, 500), rotate: num(e.rotate, 0, -3600, 3600) };
         if (e.kind === 'curve') return { ...base, kind: 'curve', pattern: String(e.pattern).slice(0, 20), size: num(e.size, 50, 0.5, 2000), a: num(e.a, 8, 1, 600), b: num(e.b, 3, 1, 48), c: num(e.c, 0.5, 0, 1), line: num(e.line, 2, 0.2, 100), rotate: num(e.rotate, 0, -3600, 3600) };
@@ -59,6 +59,8 @@ export function parseDesign(text: string): Design | null {
       machine: typeof d.machine === 'string' ? d.machine.slice(0, 20) : undefined,
       dial: typeof d.dial === 'string' ? d.dial.slice(0, 20) : undefined,
       dialRing: typeof d.dialRing === 'boolean' ? d.dialRing : undefined,
+      dialBack: d.dialBack ? true : undefined,
+      hands: typeof d.hands === 'boolean' ? d.hands : undefined,
       holes: d.holes ? { centre: num(d.holes.centre, 0, 0, 100), hang: num(d.holes.hang, 0, 0, 30), pins: !!d.holes.pins } : undefined,
       minFeature: d.minFeature === undefined ? undefined : num(d.minFeature, 1.2, 0.1, 10),
       sheet: d.sheet ? { w: num(d.sheet.w, 0, 0, 3000), h: num(d.sheet.h, 0, 0, 3000), price: num(d.sheet.price, 0, 0, 100000), speed: num(d.sheet.speed, 10, 0.1, 2000) } : undefined,

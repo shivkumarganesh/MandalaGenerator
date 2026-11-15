@@ -90,8 +90,8 @@ const [, , URL = 'http://localhost:5173/app.html', OUT = 'shots'] = process.argv
 
   // 9 ── Make it a… (clock)
   await tpl('Lotus tiers'); await openCard('Make it a'); await page.selectOption('#preset-product', 'clock'); await page.waitForTimeout(500); await page.selectOption('#preset-clock-dial', 'roman'); await page.waitForTimeout(600); await openCard('Make it a');
-  await after(lab('Product'), 1); await after(lab('Clock dial'), 2); await after(lab('Ring behind the dial'), 3); await after(lab('Centre hole'), 4); await after(lab('Hanging hole'), 5); await after(lab('Alignment pin holes'), 6);
-  await snap('make', { x: 430, y: 0, width: 1010, height: 760 });
+  await after(lab('Product'), 1); await after(lab('Clock dial'), 2); await after(lab('Dial on the back layer only'), 3); await after(lab('Ring behind the dial'), 4); await after(lab('Show clock hands'), 5); await after(lab('Centre hole'), 6); await after(lab('Hanging hole'), 7); await after(lab('Alignment pin holes'), 8);
+  await snap('make', { x: 430, y: 0, width: 1010, height: 880 });
 
   // 10 ── Machine & material plan
   await openCard('Machine & material plan'); await page.selectOption('#preset-preset', 'diode3'); await page.waitForTimeout(500); await openCard('Machine & material plan');

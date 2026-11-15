@@ -7,8 +7,9 @@ import { useEffect, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { buildStack } from '../lib/build';
-import { bbox } from '../lib/geom';
+import { buildStack, designDiameter } from '../lib/build';
+import { clockHands } from '../lib/dial';
+import { bbox, strokeToShapes } from '../lib/geom';
 import { slab } from '../lib/mesh';
 import type { BuiltLayer, Design } from '../lib/types';
 import { useStore } from '../lib/store';
@@ -37,7 +38,7 @@ function grainTexture(): THREE.CanvasTexture {
   return t;
 }
 
-function layerGeometry(l: BuiltLayer, h: number): THREE.BufferGeometry {
+function layerGeometry(l: Pick<BuiltLayer, 'shapes'>, h: number): THREE.BufferGeometry {
   const s = slab(l.shapes, 0, h);
   const pos = new Float32Array(s.caps.length + s.sides.length);
   pos.set(s.caps, 0); pos.set(s.sides, s.caps.length);
@@ -141,6 +142,31 @@ export default function Preview3D({ zoomRef, onPct }: { zoomRef: MutableRefObjec
           built.push({ geo, mats: [face, side] });
           z += hs[i] + gap;
         });
+        // engraving: a hair-thin dark line on top of each sheet, where the sheet is visible
+        const lineW = Math.max(0.5, R * 0.004);
+        let zz = -(total + gap * (stack.length - 1)) / 2;
+        stack.forEach((l, i) => {
+          zz += hs[i];
+          if (l.score.length) {
+            const lines = l.score.flatMap((sh) => [sh.outer, ...sh.holes]).map((pts) => ({ pts, closed: true }));
+            const geo = layerGeometry({ shapes: strokeToShapes(lines, lineW) }, Math.min(0.12, hs[i] * 0.08));
+            const mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(l.color).multiplyScalar(0.3), roughness: 0.9, metalness: 0 });
+            const mesh = new THREE.Mesh(geo, [mat, mat]);
+            mesh.position.z = zz; content.add(mesh); built.push({ geo, mats: [mat] });
+          }
+          zz += gap;
+        });
+        // clock hands: a preview only, floating just above the top sheet
+        if (d.product === 'clock' && d.hands) {
+          const hd = clockHands((designDiameter(d) || R * 2) / 2);
+          const top = (total + gap * (stack.length - 1)) / 2;
+          const mat = new THREE.MeshStandardMaterial({ color: 0x1b1b1e, roughness: 0.35, metalness: 0.6 });
+          [[hd.hour, 1.2], [hd.minute, 2.6], [hd.cap, 2.6]].forEach(([sh, lift], k) => {
+            const geo = layerGeometry({ shapes: [sh as typeof hd.hour] }, k === 2 ? 2.2 : 1);
+            const mesh = new THREE.Mesh(geo, [mat, mat]);
+            mesh.position.z = top + (lift as number); mesh.castShadow = true; content.add(mesh); built.push({ geo, mats: k === 0 ? [mat] : [] });
+          });
+        }
         sun.position.set(-R * 1.1, R * 1.6, R * 2.4);
         const sc = sun.shadow.camera;
         sc.left = sc.bottom = -R * 1.5; sc.right = sc.top = R * 1.5; sc.near = 1; sc.far = R * 8;

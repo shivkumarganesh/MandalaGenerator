@@ -17,6 +17,7 @@ export type Op = 'add' | 'cut' | 'score';
 interface ElBase {
   id: string;
   op: Op;
+  tag?: string; // 'dial' marks clock-dial shapes placed on an existing layer
 }
 
 /** `count` copies of a motif placed on a circle. count = 1 & radius = 0 is a centrepiece. */
@@ -116,6 +117,8 @@ export interface Design {
   machine?: string; // the machine preset in use
   dial?: string; // clock dial style (see lib/dial.ts)
   dialRing?: boolean; // plain ring behind the dial; unset = decided by the design's style
+  dialBack?: boolean; // engrave the dial on the back (bottom) sheet instead of adding a dial layer on top
+  hands?: boolean; // show a pair of clock hands in the previews (never exported)
   /** Ornament loop: a tab with a hole added to the top of the bottom sheet, for a ribbon or hook. */
   loop?: boolean;
 }

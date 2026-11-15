@@ -37,5 +37,6 @@ export function applyProduct(d: Design, p: Product | null): Design {
   // a Christmas ornament hangs from a loop on top rather than a hole through the pattern
   const loopIt = p.id === 'ornament' && d.theme === 'christmas';
   const next = { ...scaled, holes: loopIt ? { ...p.holes, hang: 0 } : { ...p.holes }, product: p.id, ...(loopIt ? { loop: true } : {}) };
-  return applyDial(next, p.id === 'clock' ? (d.dial ?? 'ticks') : 'none');
+  // a clock shows its hands unless they were switched off
+  return applyDial(p.id === 'clock' ? { ...next, hands: d.hands ?? true } : next, p.id === 'clock' ? (d.dial ?? 'ticks') : 'none');
 }

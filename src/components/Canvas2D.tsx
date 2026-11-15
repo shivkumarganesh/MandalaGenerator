@@ -3,7 +3,8 @@
 // freehand with live radial symmetry when the Draw tool is open.
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import type { Element, Pt } from '../lib/types';
-import { buildStack, elementShapes, strokeOutline } from '../lib/build';
+import { buildStack, designDiameter, elementShapes, strokeOutline } from '../lib/build';
+import { clockHands } from '../lib/dial';
 import { bbox, pathD, pointInShapes } from '../lib/geom';
 import { uid } from '../lib/recipes';
 import { addElement, findElement, getState, patchElement, setUI, useStore } from '../lib/store';
@@ -36,6 +37,8 @@ export default function Canvas2D({ zoomRef, onPct }: { zoomRef: MutableRefObject
     return () => { window.removeEventListener('keydown', kd); window.removeEventListener('keyup', ku); };
   }, []);
 
+  // clock hands: a preview only, drawn over the stack and never exported
+  const hands = useMemo(() => (design.product === 'clock' && design.hands ? clockHands((designDiameter(design) || 200) / 2) : null), [design]);
   const sel = findElement(design, ui.selected);
   const selD = useMemo(() => (sel ? pathD(elementShapes(sel.el, design.customMotifs)) : ''), [sel?.el, design.customMotifs]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -142,6 +145,7 @@ export default function Canvas2D({ zoomRef, onPct }: { zoomRef: MutableRefObject
             {l.score.length > 0 && <path className="score-line" d={pathD(l.score)} />}
           </g>
         ))}
+        {hands && <g className="clock-hands" filter={busy || stroke ? undefined : 'url(#lift)'}><path d={pathD([hands.hour])} /><path d={pathD([hands.minute])} /><path className="cap" d={pathD([hands.cap])} /></g>}
         {sel && selD && <path className={sel.el.op === 'cut' ? 'sel-outline sel-cut' : 'sel-outline'} d={selD} fillRule="evenodd" />}
         {stroke && Array.from({ length: fold }, (_, i) => (
           <g key={i} transform={`rotate(${(i * 360) / fold})`}>

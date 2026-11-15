@@ -81,24 +81,40 @@ export const wantsDialRing = (d: Design): boolean => d.dialRing ?? BUSY.includes
  * loose to place); numerals sit on top of it. Without a ring, everything is raised.
  */
 export function applyDial(d: Design, style: string): Design {
-  const plain = { ...d, layers: d.layers.filter((l) => l.tag !== 'dial'), customMotifs: d.customMotifs.filter((m) => !m.id.startsWith('dial-')), dial: undefined };
+  // remove any dial already there: its own layers, and marks engraved on the back sheet
+  const kept = d.layers.filter((l) => l.tag !== 'dial').map((l) => (l.elements.some((e) => e.tag === 'dial') ? { ...l, elements: l.elements.filter((e) => e.tag !== 'dial') } : l));
+  const plain = { ...d, layers: kept, customMotifs: d.customMotifs.filter((m) => !m.id.startsWith('dial-')), dial: undefined };
   if (style === 'none' || !DIALS.some((x) => x.id === style) || !plain.layers.length) return plain;
-  if (wantsDialRing(d)) return dialOn(plain, style, true);
+  if (d.dialBack) return dialOn(plain, style, 'back');
+  if (wantsDialRing(d)) return dialOn(plain, style, 'ring');
   // Raised marks need material under every one of them. Where the design has gaps at the rim
   // (petals, points), some would hang in mid-air, so the ring is switched on for you.
-  const raised = dialOn(plain, style, false);
+  const raised = dialOn(plain, style, 'raised');
   const loose = (x: Design) => buildStack(x)[0]?.shapes.length ?? 0;
-  return loose(raised) > loose(plain) ? { ...dialOn(plain, style, true), dialRing: true } : raised;
+  return loose(raised) > loose(plain) ? { ...dialOn(plain, style, 'ring'), dialRing: true } : raised;
 }
 
-function dialOn(d: Design, style: string, withRing: boolean): Design {
+/** Outlines of a pair of hands at ten past ten, for the previews only. IR space: y down, 12 o'clock is −y. */
+export function clockHands(R: number): { hour: Shape; minute: Shape; cap: Shape } {
+  const hand = (len: number, w: number, deg: number): Shape => {
+    const a = (deg * Math.PI) / 180, c = Math.cos(a), sn = Math.sin(a);
+    const pts = [[-w, len * 0.16], [w, len * 0.16], [w * 0.55, -len * 0.9], [0, -len], [-w * 0.55, -len * 0.9]];
+    return { outer: pts.map(([x, y]) => ({ x: x * c - y * sn, y: x * sn + y * c })), holes: [] };
+  };
+  const cap: Ring = Array.from({ length: 28 }, (_, i) => ({ x: R * 0.045 * Math.cos((i / 28) * Math.PI * 2), y: R * 0.045 * Math.sin((i / 28) * Math.PI * 2) }));
+  return { hour: hand(R * 0.46, R * 0.032, -55), minute: hand(R * 0.7, R * 0.022, 60), cap: { outer: cap, holes: [] } };
+}
+
+function dialOn(d: Design, style: string, mode: 'raised' | 'ring' | 'back'): Design {
+  const withRing = mode === 'ring';
   const layers = d.layers, customMotifs = d.customMotifs;
   const R = (designDiameter({ ...d, layers }) || 200) / 2;
   const thin = (v: number) => Math.max(1.4, v); // marks stay cuttable on small clocks
   const marks: Element[] = []; // ticks and dots
   const numerals: Element[] = [];
   const motifs: CustomMotif[] = [];
-  const op = withRing ? 'cut' : 'add';
+  // on the back sheet everything is engraved; in a ring, marks are windows; otherwise raised
+  const op = mode === 'back' ? 'score' : withRing ? 'cut' : 'add';
   if (style === 'ticks' || style === 'minutes') {
     marks.push(ring({ op, motif: 'square', count: 12, radius: R * 0.84, length: R * 0.12, width: thin(R * 0.03) }));
     marks.push(ring({ op, motif: 'square', count: 4, radius: R * 0.82, length: R * 0.16, width: thin(R * 0.055) }));
@@ -116,11 +132,15 @@ function dialOn(d: Design, style: string, withRing: boolean): Design {
       motifs.push({ id, name: roman ? ROMAN[hr] : String(hr), shapes: g.shapes, aspect: g.aspect });
       const angle = (hr % 12) * 30;
       // spin cancels the turn round the dial, so every numeral stands upright
-      numerals.push(ring({ motif: 'custom:' + id, count: 1, radius: R * 0.82, length: height, width: height * g.aspect, rotate: angle, spin: -angle }));
+      numerals.push(ring({ op: mode === 'back' ? 'score' : 'add', motif: 'custom:' + id, count: 1, radius: R * 0.82, length: height, width: height * g.aspect, rotate: angle, spin: -angle }));
     }
     if (style === 'quarters') marks.push(ring({ op, motif: 'circle', count: 4, radius: R * 0.82, length: R * 0.05, width: R * 0.05, rotate: 30 }), ring({ op, motif: 'circle', count: 4, radius: R * 0.82, length: R * 0.05, width: R * 0.05, rotate: 60 }));
   }
   const top = layers[layers.length - 1], bottom = layers[0];
+  if (mode === 'back') {
+    const els = [...marks, ...numerals].map((e) => ({ ...e, tag: 'dial' }));
+    return { ...d, layers: [{ ...bottom, elements: [...bottom.elements, ...els] }, ...layers.slice(1)], customMotifs: [...customMotifs, ...motifs], dial: style };
+  }
   const added = [];
   if (withRing) {
     added.push({ ...layer('Dial ring', bottom.color, [disc({ outer: R * 0.96, inner: R * 0.68 }), ...marks]), tag: 'dial' });
