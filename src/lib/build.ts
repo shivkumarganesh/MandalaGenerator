@@ -142,6 +142,9 @@ function plateShapes(d: Design, footprint: Shape[]): Shape[] {
   }
 }
 
+/** A circle grown by `d` — the hole plus the wall that must survive around it. */
+const offsetOne = (c: Shape, d: number): Shape => offset([c], d)[0] ?? c;
+
 /** The y of the sheet's edge straight above the centre (smaller y = higher on the page). */
 function topEdge(shapes: Shape[]): number {
   const bb = bbox(shapes);
@@ -168,9 +171,18 @@ function holeShapes(d: Design, stack: BuiltLayer[]): Shape[] {
   if (h.hang > 0) {
     const bb = bbox(stack[0].shapes);
     if (bb) {
-      // straight above the centre, a few mm inside the bottom sheet's top edge
-      const top = topEdge(stack[0].shapes);
-      out.push({ outer: circleRing(h.hang / 2, 28, 0, top + h.hang / 2 + Math.max(3, h.hang)), holes: [] });
+      // Straight above the centre, a few mm inside the bottom sheet's top edge — unless a hole there
+      // would cut a thin arm in two or break out of the edge, in which case it moves inward until it
+      // sits in solid material.
+      const top = topEdge(stack[0].shapes), base = stack[0].shapes, r = h.hang / 2;
+      const at = (k: number): Shape => ({ outer: circleRing(r, 28, 0, top + r + Math.max(3, h.hang) + k * Math.max(2, h.hang)), holes: [] });
+      let hole = at(0);
+      for (let k = 0; k < 14; k++) {
+        const c = at(k);
+        const inside = area(intersect([c], base)) > Math.PI * r * r * 0.97;
+        if (inside && difference(base, [offsetOne(c, Math.max(1, r * 0.6))]).length <= base.length) { hole = c; break; }
+      }
+      out.push(hole);
     }
   }
   if (h.pins) {

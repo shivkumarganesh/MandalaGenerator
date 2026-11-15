@@ -26,7 +26,8 @@ Same source; `VITE_TARGET` decides which one is built.
 - **Engrave** – any shape can be a blue score line on its layer instead of a cut.
 - **More like this** – a new design that keeps the current style, layer count and colours.
 - **Photo portrait** – split a photo into 2–6 tonal layers that stack into a picture.
-- **Make it a…** – wall art, clock, coaster, ornament, earring or trivet presets; centre hole, hanging hole and alignment-pin holes through every sheet.
+- **Make it a…** – wall art, clock, coaster, ornament, earring or trivet presets (the choice stays selected); centre hole, hanging hole and alignment-pin holes through every sheet. Clocks get a dial: hour marks, minute marks, dots, Roman numerals, numbers or 12 · 3 · 6 · 9, with an optional ring behind it.
+- **Guide** – an in-app guide next to Tips: 18 feature chapters and 10 step-by-step recipes with a search box, Back/Next, and buttons that load each recipe's starting design.
 - **Machine & material plan** – machine presets (kerf, thinnest detail, sheet size), layers arranged on your stock sheets, sheets needed, cutting time and cost.
 - **See it** – 2D design, a three.js 3D preview with real thickness and an explode slider, and *Cut sheets* (exactly what will be exported).
 - **Trust it** – "Ready to make?" checks for loose pieces, weak glue contact and details too thin to cut, with one-click fixes.

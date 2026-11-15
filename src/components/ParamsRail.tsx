@@ -7,6 +7,7 @@ import { PATTERNS, patternDef } from '../lib/curves';
 import { IS_ATOMM, type AtommStatus } from '../lib/atomm';
 import { materialPlan } from '../lib/exportLaser';
 import { MACHINES, PRODUCTS, applyMachine, applyProduct } from '../lib/presets';
+import { DIALS, applyDial, wantsDialRing } from '../lib/dial';
 import {
   addLayer, breakApart, duplicateElement, findElement, moveElementToLayer, moveLayer, patchDesign, patchElement, patchLayer,
   redo, removeElement, removeLayer, reorderElement, resetDesign, setDesign, setUI, undo, useStore,
@@ -194,14 +195,15 @@ function Build() {
   );
 }
 
-/** A select that applies a preset when picked, then returns to its prompt. */
-function Apply({ label, prompt, options, onPick }: { label: string; prompt: string; options: { id: string; label: string }[]; onPick: (id: string) => void }) {
+/** A preset select that keeps showing what was picked. The first option clears it. */
+function Preset({ label, none, value, options, onPick }: { label: string; none: string; value: string; options: { id: string; label: string }[]; onPick: (id: string) => void }) {
+  const id = 'preset-' + label.replace(/\W+/g, '-').toLowerCase();
   return (
     <div className="field-row">
-      <span className="field-label">{label}</span>
+      <label htmlFor={id}>{label}</label>
       <span className="select-field">
-        <select className="select wide-select" aria-label={label} value="" onChange={(e) => e.target.value && onPick(e.target.value)}>
-          <option value="">{prompt}</option>
+        <select className="select wide-select" id={id} value={options.some((o) => o.id === value) ? value : ''} onChange={(e) => onPick(e.target.value)}>
+          <option value="">{none}</option>
           {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
         </select>
         <Icon name="chevron" />
@@ -214,15 +216,22 @@ function Finishing() {
   const design = useStore((s) => s.design);
   const h = design.holes ?? { centre: 0, hang: 0, pins: false };
   const set = (p: Partial<typeof h>) => patchDesign({ holes: { ...h, ...p } }, 'holes');
-  const [note, setNote] = useState('');
+  const product = PRODUCTS.find((p) => p.id === design.product);
   return (
-    <Card key={design.theme ?? 'plain'} title="Make it a…" defaultOpen={design.theme === 'christmas'}>
-      <Apply label="Product" prompt="Choose…" options={PRODUCTS} onPick={(id) => { const p = PRODUCTS.find((x) => x.id === id)!; setDesign((d) => applyProduct(d, p)); setNote(p.note); }} />
-      {note && <Note>{note}</Note>}
+    <Card key={design.theme ?? 'plain'} title="Make it a…" defaultOpen={design.theme === 'christmas' || !!design.product}>
+      <Preset label="Product" none="Custom" value={design.product ?? ''} options={PRODUCTS} onPick={(id) => setDesign((d) => applyProduct(d, PRODUCTS.find((x) => x.id === id) ?? null))} />
+      {product && <Note>{product.note}</Note>}
+      {design.product === 'clock' && (
+        <>
+          <Preset label="Clock dial" none="None" value={design.dial ?? ''} options={DIALS.filter((x) => x.id !== 'none')} onPick={(id) => setDesign((d) => applyDial(d, id || 'none'))} />
+          {design.dial && <Switch label="Ring behind the dial" checked={wantsDialRing(design)} onChange={(v) => setDesign((d) => applyDial({ ...d, dialRing: v }, d.dial ?? 'ticks'))} />}
+          <Note>The dial is added on top as its own layer, so you can recolour it or select its marks and move them. The ring keeps the marks readable over a busy pattern, and is switched on automatically when some marks would otherwise have nothing beneath them.</Note>
+        </>
+      )}
       {design.theme === 'christmas' && (
         <>
-          <Switch label="Ornament loop on top" checked={!!design.loop} onChange={(v) => patchDesign({ loop: v })} />
-          <Note>Adds a small tab with a hole to the top of the bottom sheet, for a ribbon or hook. Christmas designs only.</Note>
+          <Switch label="Ornament loop on top" checked={!!design.loop} onChange={(v) => patchDesign({ loop: v, ...(v ? { holes: { ...h, hang: 0 } } : {}) })} />
+          <Note>Adds a small tab with a hole to the top of the bottom sheet, for a ribbon or hook. It replaces the hanging hole. Christmas designs only.</Note>
         </>
       )}
       <Num label="Centre hole" value={h.centre} min={0} max={60} step={0.5} onChange={(v) => set({ centre: v })} />
@@ -241,7 +250,7 @@ function PlanCard() {
   const plan = useMemo(() => materialPlan(design, buildStack(design)), [design]);
   return (
     <Card title="Machine & material plan" defaultOpen={false}>
-      <Apply label="Preset" prompt="Choose…" options={MACHINES} onPick={(id) => setDesign((d) => applyMachine(d, MACHINES.find((m) => m.id === id)!))} />
+      <Preset label="Preset" none="Custom" value={design.machine ?? ''} options={MACHINES} onPick={(id) => { const m = MACHINES.find((x) => x.id === id); if (m) setDesign((d) => applyMachine(d, m)); else patchDesign({ machine: undefined }); }} />
       <Note>Presets are starting points — confirm kerf and speed with a test cut.</Note>
       <Num label="Thinnest detail" value={design.minFeature ?? MIN_FEATURE.laser} min={0.2} max={5} step={0.1} onChange={(v) => patchDesign({ minFeature: v }, 'minf')} />
       <Num label="Stock sheet width" value={sh.w} min={0} max={3000} step={10} onChange={(v) => set({ w: v })} />

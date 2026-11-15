@@ -74,6 +74,7 @@ export interface Layer {
   color: string;
   visible: boolean;
   elements: Element[];
+  tag?: string; // 'dial' marks the generated clock-dial layer
 }
 
 /** Imported artwork, normalised so its larger side is 1 and it is centred on the origin. */
@@ -111,6 +112,10 @@ export interface Design {
   /** How the design was generated, so "More like this" can make a sibling. */
   gen?: { style: string };
   theme?: string; // 'christmas' unlocks seasonal options
+  product?: string; // the "Make it a…" preset in use
+  machine?: string; // the machine preset in use
+  dial?: string; // clock dial style (see lib/dial.ts)
+  dialRing?: boolean; // plain ring behind the dial; unset = decided by the design's style
   /** Ornament loop: a tab with a hole added to the top of the bottom sheet, for a ribbon or hook. */
   loop?: boolean;
 }

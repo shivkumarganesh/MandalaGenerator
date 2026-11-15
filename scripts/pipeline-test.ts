@@ -10,6 +10,8 @@ import { fusedBody, slab } from '../src/lib/mesh';
 import { parseDesign } from '../src/lib/share';
 import { area, difference } from '../src/lib/geom';
 import { fitToFrame, presetFrame, templateDesign } from '../src/lib/frame';
+import { MACHINES, PRODUCTS, applyMachine, applyProduct } from '../src/lib/presets';
+import { DIALS, applyDial } from '../src/lib/dial';
 
 let failed = 0;
 const check = (ok: boolean, msg: string) => { if (!ok) { failed++; console.log('  FAIL', msg); } };
@@ -114,6 +116,46 @@ for (const t of TEMPLATES.filter((x) => x.group === 'Christmas')) {
   check(!validate(looped, 1.2, d.solidStack).some((x) => x.level === 'error'), `${t.label}: loop causes blocking issues`);
 }
 check(!templateDesign(TEMPLATES.find((x) => !x.group)!).theme, 'non-Christmas templates must not get the Christmas theme');
+// the Ornament preset must never sever a design, with the loop (Christmas) or a plain hole
+{
+  const orn = PRODUCTS.find((p) => p.id === 'ornament')!;
+  for (const t of TEMPLATES.filter((x) => x.group === 'Christmas')) {
+    const o = applyProduct(templateDesign(t), orn);
+    check(o.loop === true && o.holes?.hang === 0, `${t.label}: a Christmas ornament should use the loop, not a hole`);
+    for (const d of [o, { ...o, loop: false, holes: { ...o.holes!, hang: 3 } }])
+      check(!validate(buildStack(d), 1.2, d.solidStack).some((x) => x.level === 'error'), `${t.label} as an ornament (${d.loop ? 'loop' : 'hole'}): blocking issues`);
+  }
+  for (const st of ['snowflake', 'sunburst', 'compass', 'bloom', 'filigree'] as const) for (let i = 0; i < 4; i++) {
+    const d = applyProduct(generate(8800 + i, st, undefined, 4), orn);
+    check(!d.loop && d.holes?.hang === 3, `${st}: a non-Christmas ornament keeps the plain hole`);
+    const stack = buildStack(d);
+    check(!validate(stack, 1.2, d.solidStack).some((x) => x.id === 'bottom'), `${st} #${i}: the hanging hole cut the bottom sheet apart`);
+    check(area(stack[0].shapes) < area(buildStack({ ...d, holes: { ...d.holes!, hang: 0 } })[0].shapes) - 5, `${st} #${i}: the hanging hole should still be there`);
+  }
+}
+// presets persist, and every clock dial builds cleanly with and without its ring
+{
+  const clock = PRODUCTS.find((p) => p.id === 'clock')!;
+  for (const st of ['lotus', 'filigree', 'girih'] as const) {
+    const base = generate(7100, st, 'wood', 5);
+    const c = applyProduct(base, clock);
+    check(c.product === 'clock' && c.dial === 'ticks' && c.holes?.centre === 8 && Math.abs(designDiameter(c) - 300) < 1, `${st}: clock preset should set product, dial, hole and size`);
+    for (const dl of DIALS.filter((x) => x.id !== 'none')) for (const ringOn of [true, false]) {
+      const d = applyDial({ ...c, dialRing: ringOn }, dl.id);
+      const dialLayers = d.layers.filter((l) => l.tag === 'dial');
+      check(dialLayers.length >= 1 && d.layers.length === base.layers.length + dialLayers.length, `${st}/${dl.id}: dial should add its own layer(s) and replace, not stack`);
+      const stack = buildStack(d);
+      check(!validate(stack, 1.2, d.solidStack).some((x) => x.level === 'error'), `${st}/${dl.id}/${ringOn}: dial causes blocking issues`);
+      check(stack.every((l) => !pointIn(l.shapes)), `${st}/${dl.id}: the movement hole must stay open through the dial`);
+      const back = parseDesign(JSON.stringify(d))!;
+      check(back.dial === dl.id && back.product === 'clock' && back.layers.filter((l) => l.tag === 'dial').length === dialLayers.length && JSON.stringify(buildStack(back)) === JSON.stringify(stack), `${st}/${dl.id}: dial must survive a project round-trip`);
+    }
+    const off = applyProduct(c, PRODUCTS.find((p) => p.id === 'coaster')!);
+    check(off.product === 'coaster' && !off.dial && off.layers.length === base.layers.length, `${st}: leaving Clock should remove the dial`);
+    check(!applyProduct(c, null).product, 'choosing Custom clears the product');
+  }
+  check(applyMachine(generate(1, 'lotus'), MACHINES[0]).machine === MACHINES[0].id, 'machine preset should be remembered');
+}
 check(TEMPLATES.length >= 20 && new Set(TEMPLATES.map((t) => t.id)).size === TEMPLATES.length, 'expected 20+ unique templates');
 // every style, many seeds: no two designs alike, none broken
 for (const st of STYLES) {

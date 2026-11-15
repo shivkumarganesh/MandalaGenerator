@@ -10,6 +10,7 @@ import SheetView from './components/SheetView';
 import LeadPanel from './components/LeadPanel';
 import ParamsRail from './components/ParamsRail';
 import { PrintDialog, TipsDialog } from './components/Dialogs';
+import Guide from './components/Guide';
 import { Icon, Segmented } from './components/ui';
 import type { ZoomApi } from './components/panzoom';
 
@@ -41,6 +42,7 @@ export default function App() {
   const atomm = useAtommStatus();
   const [tips, setTips] = useState(false);
   const [print, setPrint] = useState(false);
+  const [guide, setGuide] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [pct, setPct] = useState(100);
   const [zoomMenu, setZoomMenu] = useState(false);
@@ -123,9 +125,14 @@ export default function App() {
           )}
           <div className="gen-canvas-top">
             <Segmented tabs label="View" value={view} options={VIEWS} onChange={(v) => setUI({ view: v })} />
-            <button type="button" className="btn-tips gen-tips" onClick={() => setTips(true)}>
+            <div className="gen-tips canvas-help">
+              <button type="button" className="btn-tips" onClick={() => setGuide(true)}>
+                <svg className="icon icon-20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.2C8.4 4 6.2 3.6 3.5 3.8v11c2.7-.2 4.9.2 6.5 1.4 1.6-1.2 3.8-1.6 6.5-1.4v-11c-2.7-.2-4.9.2-6.5 1.4ZM10 5.2v11" /></svg>Guide
+              </button>
+              <button type="button" className="btn-tips" onClick={() => setTips(true)}>
               <svg className="icon icon-20" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 15.5h5M8.5 17.8h3M10 2.2a5 5 0 0 1 3 9c-.6.5-.9 1.1-.9 1.8H7.9c0-.7-.3-1.3-.9-1.8a5 5 0 0 1 3-9Z" /></svg>Tips
-            </button>
+              </button>
+            </div>
           </div>
           <div className="gen-canvas-bottom">
             <div className="zoom-cluster" role="group" aria-label="Zoom">
@@ -148,6 +155,7 @@ export default function App() {
       </div>
 
       <TipsDialog open={tips} onClose={() => setTips(false)} />
+      <Guide open={guide} onClose={() => setGuide(false)} />
       {!IS_ATOMM && <PrintDialog open={print} onClose={() => setPrint(false)} />}
       <div className="toast" role="status" data-show={toastMsg ? '' : undefined}>{toastMsg ?? lastToast.current}</div>
     </div>

@@ -1,6 +1,7 @@
 // Machine and product presets: plain bundles of settings, applied in one click.
 import type { Design } from './types';
 import { designDiameter, scaleDesign } from './build';
+import { applyDial } from './dial';
 
 export interface Machine { id: string; label: string; thickness: number; kerf: number; minFeature: number; sheet: { w: number; h: number }; speed: number }
 
@@ -14,7 +15,7 @@ export const MACHINES: Machine[] = [
 ];
 
 export function applyMachine(d: Design, m: Machine): Design {
-  return { ...d, thickness: m.thickness, kerf: m.kerf, minFeature: m.minFeature, sheet: { w: m.sheet.w, h: m.sheet.h, price: d.sheet?.price ?? 0, speed: m.speed } };
+  return { ...d, machine: m.id, thickness: m.thickness, kerf: m.kerf, minFeature: m.minFeature, sheet: { w: m.sheet.w, h: m.sheet.h, price: d.sheet?.price ?? 0, speed: m.speed } };
 }
 
 export interface Product { id: string; label: string; size: number; holes: { centre: number; hang: number; pins: boolean }; note: string }
@@ -28,8 +29,13 @@ export const PRODUCTS: Product[] = [
   { id: 'trivet', label: 'Trivet · 180 mm', size: 180, holes: { centre: 0, hang: 0, pins: true }, note: 'Thicker sheets (4–6 mm) cope better with heat.' },
 ];
 
-export function applyProduct(d: Design, p: Product): Design {
+/** Apply a product preset. A clock gets hour marks; leaving "Clock" removes the dial again. '' = custom. */
+export function applyProduct(d: Design, p: Product | null): Design {
+  if (!p) return applyDial({ ...d, product: undefined }, 'none');
   const dia = designDiameter(d);
   const scaled = dia > 0 ? scaleDesign(d, p.size / dia) : d;
-  return { ...scaled, holes: { ...p.holes } };
+  // a Christmas ornament hangs from a loop on top rather than a hole through the pattern
+  const loopIt = p.id === 'ornament' && d.theme === 'christmas';
+  const next = { ...scaled, holes: loopIt ? { ...p.holes, hang: 0 } : { ...p.holes }, product: p.id, ...(loopIt ? { loop: true } : {}) };
+  return applyDial(next, p.id === 'clock' ? (d.dial ?? 'ticks') : 'none');
 }

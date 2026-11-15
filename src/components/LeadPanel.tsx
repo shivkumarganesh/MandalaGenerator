@@ -9,6 +9,7 @@ import { PALETTES, STYLES, STYLE_LABELS, TEMPLATES, applyPalette, curve, disc, e
 import { FONTS, importSvg, loadBitmap, photoLevels, textToMotif, toMotif, traceImageData } from '../lib/importArt';
 import { coloringSvg } from '../lib/exportLaser';
 import { turntable } from '../lib/turntable';
+import { applyDial } from '../lib/dial';
 import { layer as mkLayer, paletteColors } from '../lib/recipes';
 import { download, previewSvg, slugName, svgToPng } from '../lib/exportLaser';
 import { encodeDesign, parseDesign } from '../lib/share';
@@ -80,7 +81,8 @@ function surprise(like = false) {
     d = { ...d, finish: cur.finish, plateColor: cur.plateColor, layers: d.layers.map((l, i) => ({ ...l, color: cols[Math.min(i, cols.length - 1)] })) };
   }
   // finishing choices belong to the project, not to one roll of the dice
-  d = { ...d, holes: cur.holes, sheet: cur.sheet, minFeature: cur.minFeature, thickness: cur.thickness, kerf: cur.kerf, loop: d.theme === 'christmas' ? cur.loop : undefined };
+  d = { ...d, holes: cur.holes, sheet: cur.sheet, minFeature: cur.minFeature, thickness: cur.thickness, product: cur.product, machine: cur.machine, kerf: cur.kerf, loop: d.theme === 'christmas' ? cur.loop : undefined };
+  if (cur.product === 'clock' && cur.dial) d = applyDial(d, cur.dial); // a clock stays a clock
   loadGenerated(d);
 }
 
