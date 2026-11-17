@@ -151,7 +151,15 @@ function topEdge(shapes: Shape[]): number {
   if (!bb) return 0;
   const band = Math.max(2, (bb.maxX - bb.minX) * 0.03);
   let top = Infinity;
-  for (const s of shapes) for (const p of s.outer) if (Math.abs(p.x) < band && p.y < top) top = p.y;
+  for (const s of shapes) {
+    const r = s.outer;
+    for (let i = 0; i < r.length; i++) {
+      const p = r[i], q = r[(i + 1) % r.length];
+      if (Math.abs(p.x) < band && p.y < top) top = p.y;
+      // a flat top has no vertex near the centre line, so also take where each edge crosses it
+      if (p.x < 0 !== q.x < 0) { const y = p.y + ((q.y - p.y) * -p.x) / (q.x - p.x); if (y < top) top = y; }
+    }
+  }
   return top === Infinity ? bb.minY : top;
 }
 
