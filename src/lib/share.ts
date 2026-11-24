@@ -55,6 +55,8 @@ export function parseDesign(text: string): Design | null {
       frame,
       theme: d.theme === 'christmas' ? 'christmas' : undefined,
       loop: d.loop ? true : undefined,
+      keyhole: d.keyhole ? true : undefined,
+      numbers: d.numbers ? true : undefined,
       product: typeof d.product === 'string' ? d.product.slice(0, 20) : undefined,
       machine: typeof d.machine === 'string' ? d.machine.slice(0, 20) : undefined,
       dial: typeof d.dial === 'string' ? d.dial.slice(0, 20) : undefined,

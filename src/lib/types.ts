@@ -121,6 +121,10 @@ export interface Design {
   hands?: boolean; // show a pair of clock hands in the previews (never exported)
   /** Ornament loop: a tab with a hole added to the top of the bottom sheet, for a ribbon or hook. */
   loop?: boolean;
+  /** Keyhole hanger: a slot in the back sheet and a hidden pocket for the screw head in the sheet above it. */
+  keyhole?: boolean;
+  /** Engrave each sheet's number where the next sheet will cover it. */
+  numbers?: boolean;
 }
 
 export interface Frame {

@@ -3,9 +3,10 @@
 import { t, tn } from './i18n';
 import { getStroke } from 'perfect-freehand';
 import type { BuiltLayer, CurveEl, CustomMotif, Design, DiscEl, Element, Issue, Layer, RingEl, Shape, Stats, StrokeEl, Ring } from './types';
-import { area, bbox, circleRing, clean, cutLength, difference, intersect, mapShapes, offset, polygonRing, rotator, shapeArea, union } from './geom';
+import { area, bbox, circleRing, clean, cutLength, difference, intersect, mapShapes, offset, polygonRing, rotator, shapeArea, strokeToShapes, union } from './geom';
 import { builtinMotif } from './motifs';
 import { curveShapes, type CurvePattern } from './curves';
+import { numberShapes } from './dial';
 
 // ── element → shapes (cached on object identity; state updates are immutable) ─────────────
 
@@ -172,12 +173,48 @@ export function loopShapes(base: Shape[]): { tab: Shape[]; hole: Shape[] } | nul
   return { tab: [{ outer: circleRing(r, 40, 0, cy), holes: [] }], hole: [{ outer: circleRing(r * 0.42, 28, 0, cy - r * 0.08), holes: [] }] };
 }
 
+/**
+ * Keyhole hanger: an entry hole with a narrower slot above it in the back sheet, and a wider pocket
+ * in the second sheet so the screw head has room. The third sheet covers both, so nothing shows
+ * from the front. It is placed on the centre line, as high as three solid sheets allow.
+ */
+export function keyholeShapes(stack: BuiltLayer[]): { slot: Shape[]; pocket: Shape[] } | null {
+  if (stack.length < 2) return null;
+  const back = offset(stack[0].shapes, -2.5);
+  const bb = bbox(back);
+  if (!bb) return null;
+  const two = intersect(back, stack[1].shapes), three = stack.length > 2 ? intersect(two, stack[2].shapes) : [];
+  const stadium = (y0: number, y1: number, w: number) => strokeToShapes([{ pts: [{ x: 0, y: y0 }, { x: 0, y: y1 }], closed: false }], w);
+  const inside = (a: Shape[], b: Shape[]) => area(intersect(a, b)) > area(a) * 0.995;
+  // best: hidden under a third solid sheet; next: a clean pocket in the second sheet; last: wherever the back sheet is solid
+  for (const solid of [three, two, back]) {
+    if (!solid.length) continue;
+    for (let y = bb.minY + 15; y < Math.min(bb.maxY - 6, bb.minY + (bb.maxY - bb.minY) * 0.45); y += 2) {
+      const pocket = stadium(y + 0.5, y - 9, 11);
+      if (!inside(pocket, solid)) continue;
+      return { slot: union([{ outer: circleRing(4.5, 32, 0, y), holes: [] }, ...stadium(y, y - 9, 4.4)]), pocket };
+    }
+  }
+  return null;
+}
+
+/** A point on sheet `a` that sheet `b` covers, with `r` mm of solid material all round — where a hidden number can go. */
+function hiddenSpot(a: Shape[], b: Shape[], r: number): { x: number; y: number } | null {
+  const room = offset(intersect(a, b), -r);
+  let best: { x: number; y: number } | null = null, bd = Infinity;
+  for (const s of room) for (const p of s.outer) { const dd = Math.abs(p.x) * 1.5 + Math.abs(p.y - 0); if (dd < bd && Math.hypot(p.x, p.y) > 9) { bd = dd; best = p; } }
+  return best;
+}
+
+/** Stacks whose keyhole could not be placed, so the panel can say so. */
+export const keyholeMissing = new WeakSet<BuiltLayer[]>();
+
 function holeShapes(d: Design, stack: BuiltLayer[]): Shape[] {
   const h = d.holes;
   if (!h || !stack.length) return [];
   const out: Shape[] = [];
   if (h.centre > 0) out.push({ outer: circleRing(h.centre / 2, 40), holes: [] });
-  if (h.hang > 0) {
+  if (h.hang > 0 && !d.keyhole) {
     const bb = bbox(stack[0].shapes);
     if (bb) {
       // Straight above the centre, a few mm inside the bottom sheet's top edge — unless a hole there
@@ -245,8 +282,21 @@ export function buildStack(d: Design): BuiltLayer[] {
     const lp = loopShapes(out[0].shapes);
     if (lp) { out[0].shapes = difference(union([...out[0].shapes, ...lp.tab]), lp.hole); out[0].own = difference(union([...out[0].own, ...lp.tab]), lp.hole); }
   }
+  if (d.keyhole) {
+    const k = keyholeShapes(out);
+    // crumbs the pocket leaves in an open second sheet are dropped: they could not be glued
+    const cut = (sh: Shape[], c: Shape[]) => difference(sh, c).filter((q) => shapeArea(q) >= 4);
+    if (k) { out[0].shapes = difference(out[0].shapes, k.slot); out[0].own = difference(out[0].own, k.slot); out[1].shapes = cut(out[1].shapes, k.pocket); out[1].own = cut(out[1].own, k.pocket); }
+    else keyholeMissing.add(out);
+  }
   // engraving only exists where the sheet is visible material
   out.forEach((l, i) => { if (l.score.length) l.score = intersect(l.score, i < out.length - 1 ? difference(l.shapes, out[i + 1].shapes) : l.shapes); });
+  // sheet numbers are the exception: they go where the next sheet hides them
+  if (d.numbers) out.forEach((l, i) => {
+    if (i === out.length - 1) return;
+    const text = String(i + 1), spot = hiddenSpot(l.shapes, out[i + 1].shapes, text.length > 1 ? 5.5 : 4);
+    if (spot) l.score = [...l.score, ...numberShapes(text, 5, spot.x, spot.y)];
+  });
   stackCache.set(d, out);
   return out;
 }

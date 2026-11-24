@@ -1,7 +1,7 @@
 // The parameters rail: header (units, undo/redo, reset) · property cards · pinned export footer.
 import { useEffect, useMemo, useState } from 'react';
 import type { CurveEl, DiscEl, EdgeStyle, Element, Finish, Issue, PlateShape, RingEl, StrokeEl } from '../lib/types';
-import { MIN_FEATURE, buildStack, computeStats, designDiameter, scaleDesign, validate } from '../lib/build';
+import { MIN_FEATURE, buildStack, computeStats, designDiameter, keyholeMissing, scaleDesign, validate } from '../lib/build';
 import { MOTIFS } from '../lib/motifs';
 import { PATTERNS, patternDef } from '../lib/curves';
 import { IS_ATOMM, type AtommStatus } from '../lib/atomm';
@@ -239,6 +239,11 @@ function Finishing() {
           <Note>Adds a small tab with a hole to the top of the bottom sheet, for a ribbon or hook. It replaces the hanging hole. Christmas designs only.</Note>
         </>
       )}
+      <Switch label="Keyhole hanger on the back" checked={!!design.keyhole} onChange={(v) => patchDesign({ keyhole: v })} />
+      {design.keyhole && keyholeMissing.has(buildStack(design)) && <div className="check-list"><Alert kind="warning">No room for the keyhole: the back sheet has no solid area near the top.</Alert></div>}
+      <Note>Cuts a keyhole slot in the back sheet, with a pocket for the screw head in the sheet above. It replaces the hanging hole.</Note>
+      <Switch label="Engrave layer numbers" checked={!!design.numbers} onChange={(v) => patchDesign({ numbers: v })} />
+      <Note>A small number on each sheet shows the gluing order. It sits where the next sheet covers it, so it is hidden once glued.</Note>
       <Num label="Centre hole" value={h.centre} min={0} max={60} step={0.5} onChange={(v) => set({ centre: v })} />
       <Num label="Hanging hole" value={h.hang} min={0} max={20} step={0.2} onChange={(v) => set({ hang: v })} />
       <Switch label="Alignment pin holes" checked={h.pins} onChange={(v) => set({ pins: v })} />

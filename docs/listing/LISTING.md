@@ -8,11 +8,11 @@ App: `mandala-studio` · Console → Listing
 
 ## Short description (one line)
 
-    Design layered mandala art, clocks and ornaments — pick a template or press Surprise me, then export cut-ready layers.
+    Layered mandalas in any shape: draw your own, import your art, or press Surprise me — wall art, clocks and ornaments, cut-ready.
 
 Shorter alternative if the field is tight:
 
-    Layered mandala designer: endless designs, cut-ready SVG layers.
+    Layered mandalas in any shape — draw, import or Surprise me.
 
 ## Craft
 
@@ -28,32 +28,41 @@ Needs a real photo of a piece cut from this app — this cannot be generated. Ti
 
 ## Detailed description
 
-    Mandala Stack Studio turns a few clicks into a layered mandala you can cut, glue and hang.
+Leads with what the other mandala generators on Atomm do not offer (checked against the three
+existing listings): shapes other than round, freehand drawing, importing your own art, products
+and seasonal sets.
+
+    Mandala Stack Studio turns a few clicks into a layered mandala you can cut, glue and hang — in any shape you like.
+
+    WHAT MAKES IT DIFFERENT
+    • Any shape, not just round: circle, square, rectangle, heart, star, seasonal outlines — or upload your own SVG outline and grow a mandala inside it.
+    • Draw your own: sketch freehand and watch every stroke repeat around the centre with mirror symmetry.
+    • Use your own artwork: import an SVG, trace a picture, add a name, or turn a photo into a layered portrait.
+    • Endless designs: 66 templates, 23 styles and a Surprise me button that makes a new design on every press, with the layer count you choose (3–8).
+    • Made into things: wall art, clocks with a dial and hands preview, coasters, ornaments, earrings and trivets.
+    • Seasonal collections: 18 Christmas and 13 Thanksgiving designs, plus spirograph, rose-curve and star-polygon patterns.
 
     START IN SECONDS
-    • 66 ready-made templates, including Christmas, Thanksgiving and pattern-algorithm collections.
-    • Surprise me: choose a layout (free form, circle, square, rectangle, or your own SVG outline), a style and a number of layers (3–8), and get a brand-new design on every press. "More like this" keeps the style and colours and gives you a sibling.
+    • Pick a template, or choose a layout, a style and a number of layers and press Surprise me. "More like this" keeps the style and colours and gives you a sibling.
     • 14 colour palettes — wood tones, walnut, sunset, ocean, forest, Christmas, frost and more.
 
     MAKE IT YOURS
     • Layers panel: reorder, recolour, hide or delete layers, and add your own on top.
     • Motifs: petals, leaves, stars, hearts, snowflakes, holly, maple leaves, pumpkins and more, placed in rings around the centre. Click any shape on the canvas to change its count, size and rotation.
-    • Pattern curves: spirograph, rose curves, guilloché, star polygons, flower of life, spirals and webs.
-    • Draw: sketch freehand with mirror symmetry and watch it repeat around the circle.
-    • Import: bring in your own SVG or a photo and use it as a motif, or add text.
+    • Each shape can add material, cut a window or be engraved.
 
     MADE TO BE MADE
-    • "Make it a…" presets size the design for wall art, a clock, a coaster, an ornament, an earring or a trivet.
-    • Clock mode adds a dial (hour marks, minutes, dots, numbers or Roman numerals), a centre hole for a standard quartz movement and a preview of the hands.
-    • Ornament mode adds a hanging hole or a ribbon loop.
+    • Clock mode adds a dial (hour marks, minutes, dots, numbers or Roman numerals) and a centre hole for a standard quartz movement.
+    • Hanging options: a hole, a ribbon loop for ornaments, or a keyhole slot on the back with a pocket for the screw head.
+    • Engraved layer numbers show the gluing order and disappear under the next sheet.
     • Alignment pin holes keep layers lined up while the glue sets.
     • Kerf compensation and optional scored glue guides.
     • "Fill under upper layers" guarantees every piece has something to glue to.
-    • Built-in checks warn about details that are too thin to cut or pieces that would fall out, with one-click fixes.
+    • Built-in checks warn about details too thin to cut or pieces with nothing to glue to, with one-click fixes.
+    • Material plan: sheets needed, estimated time and cost for your sheet size.
 
     SEE IT BEFORE YOU CUT
     • 2D design view, a real 3D preview with an explode slider, and a Cut sheets view showing each layer exactly as it will be cut.
-    • Material plan: sheets needed, estimated time and cost for your sheet size.
 
     EXPORT
     • One SVG per layer, true to size in millimetres, with cut lines in red and score lines in blue — open them straight in xTool Studio or download them as a zip with an assembly guide.

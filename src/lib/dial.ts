@@ -71,6 +71,15 @@ function glyph(text: string, roman: boolean): { shapes: Shape[]; aspect: number 
   return { aspect: w / h, shapes: raw.map((s) => ({ outer: s.outer.map(f), holes: s.holes.map((r) => r.map(f)) })) };
 }
 
+/** A number as thin cuttable line-work `h` mm tall, centred on (cx, cy) — used for engraved sheet numbers. */
+export function numberShapes(text: string, h: number, cx: number, cy: number): Shape[] {
+  const lines: Line[] = [];
+  let x = 0;
+  for (const ch of text) { for (const l of DIGITS[ch] ?? []) lines.push({ closed: l.closed, pts: l.pts.map((p) => ({ x: p.x + x, y: p.y })) }); x += 1.28; }
+  const k = h / 1.5, w = (x - 0.28) * k;
+  return strokeToShapes(lines.map((l) => ({ closed: l.closed, pts: l.pts.map((p) => ({ x: cx - w / 2 + p.x * k, y: cy - h / 2 + p.y * k })) })), Math.max(0.3, h * 0.07));
+}
+
 const BUSY = ['filigree', 'swirl', 'gothic', 'starlace', 'spirograph', 'rosette', 'girih', 'guilloche', 'flowerlife', 'cobweb'];
 /** Line-work designs need a plain ring behind the dial or the marks disappear into the pattern. */
 export const wantsDialRing = (d: Design): boolean => d.dialRing ?? BUSY.includes(d.gen?.style ?? '');

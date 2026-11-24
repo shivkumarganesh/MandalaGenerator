@@ -188,3 +188,9 @@
 /* clock hands: preview only */
 .clock-hands path { fill: var(--color-text-primary); pointer-events: none; }
 .clock-hands .cap { fill: var(--color-text-secondary); }
+
+/* Longer languages: the view tabs stay centred while there is room, then slide left and finally
+   wrap, rather than running under the Guide and Tips buttons. */
+.gen-canvas-top { flex-wrap: wrap; gap: var(--space-100); }
+.gen-canvas-top::before { content: ''; flex: 1 1 0; }
+.gen-canvas-top .gen-tips { position: static; flex: 1 0 auto; justify-content: flex-end; }
