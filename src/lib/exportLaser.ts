@@ -1,5 +1,6 @@
 // Laser output. Files are machine-facing: 1:1, millimetres, viewBox in mm, hairline strokes.
 // Cut = red #FE0002 (what Atomm / xTool Studio auto-classifies as "cut"), score = blue.
+import { locale, t, tn } from './i18n';
 import JSZip from 'jszip';
 import type { BuiltLayer, Design, Shape } from './types';
 import { bbox, intersect, offset, pathD } from './geom';
@@ -144,8 +145,9 @@ const esc = (s: string) => s.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;
 
 /** A printable page: one picture per step, each adding the next sheet. */
 export function assemblyGuide(d: Design, stack: BuiltLayer[]): string {
-  const steps = stack.map((l, i) => `<section><h2>Step ${i + 1} — ${i === 0 ? 'start with' : 'add'} ${esc(l.name)}</h2><p>File ${String(i + 1).padStart(2, '0')} · ${l.shapes.length} piece${l.shapes.length > 1 ? 's' : ''}${i ? ' · glue onto the previous sheet' : ''}</p>${previewSvg(stack.slice(0, i + 1), 420)}</section>`).join('');
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><title>${esc(d.name)} — assembly guide</title><style>body{font:14px/1.5 system-ui,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#171719}h1{font-size:22px}h2{font-size:15px;margin:0}p{margin:2px 0 8px;color:#3d3e42}main{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px}section{break-inside:avoid}svg{width:100%;height:auto;background:#f6f6f7;border-radius:8px}@media print{svg{background:none}}</style><h1>${esc(d.name)} — assembly guide</h1><p>${stack.length} sheets of ${d.thickness} mm. Dry-fit first, then glue from the bottom up.${d.holes?.pins ? ' Push two 3 mm pins or toothpicks through the alignment holes to keep the sheets registered.' : ''}</p><main>${steps}</main></html>`;
+  const steps = stack.map((l, i) => `<section><h2>${esc(t(i === 0 ? 'Step {n} — start with {name}' : 'Step {n} — add {name}', { n: i + 1, name: tn(l.name) }))}</h2><p>${esc(t('File {n} · pieces: {k}', { n: String(i + 1).padStart(2, '0'), k: l.shapes.length }))}${i ? ' · ' + esc(t('glue onto the previous sheet')) : ''}</p>${previewSvg(stack.slice(0, i + 1), 420)}</section>`).join('');
+  const title = esc(t('{name} — assembly guide', { name: tn(d.name) }));
+  return `<!doctype html><html lang="${locale()}"><meta charset="utf-8"><title>${title}</title><style>body{font:14px/1.5 system-ui,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#171719}h1{font-size:22px}h2{font-size:15px;margin:0}p{margin:2px 0 8px;color:#3d3e42}main{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px}section{break-inside:avoid}svg{width:100%;height:auto;background:#f6f6f7;border-radius:8px}@media print{svg{background:none}}</style><h1>${title}</h1><p>${esc(t('{n} sheets of {mm} mm. Dry-fit first, then glue from the bottom up.', { n: stack.length, mm: d.thickness }))}${d.holes?.pins ? ' ' + esc(t('Push two 3 mm pins or toothpicks through the alignment holes to keep the sheets registered.')) : ''}</p><main>${steps}</main></html>`;
 }
 
 const mm = (n: number) => n.toFixed(1);
@@ -153,17 +155,17 @@ const mm = (n: number) => n.toFixed(1);
 export function readme(d: Design, stack: BuiltLayer[], cuts: CutLayer[]): string {
   const W = Math.max(...cuts.map((c) => c.w)), H = Math.max(...cuts.map((c) => c.h));
   return [
-    `${d.name} — laser layer pack`, 'Made with Mandala Stack Studio', '',
-    `Finished size : ${mm(W)} x ${mm(H)} mm, ${mm(stack.length * d.thickness)} mm tall`,
-    `Material      : ${stack.length} sheets of ${d.thickness} mm`,
-    `Kerf offset   : ${d.kerf ? d.kerf + ' mm (already applied)' : 'none'}`, '',
-    'FILES', ...cuts.map((c, i) => `  ${c.file}  ${mm(c.w)} x ${mm(c.h)} mm   ${i === 0 ? '(bottom)' : i === cuts.length - 1 ? '(top)' : ''}`),
-    '  all-layers.svg   every sheet on one page', '  cutting-machine-layers.svg   filled colour layers for Cricut / Silhouette', '  assembly-guide.html   printable step-by-step pictures', ...(d.sheet && d.sheet.w > 0 ? ['  material-plan/   layers arranged on your stock sheets'] : []), '  preview.svg      assembled, coloured reference', '  project.mandala.json   re-open in the app to keep editing', '',
-    'LINE COLOURS', `  red  ${CUT}  cut through`, ...(d.guides || stack.some((l) => l.score.length) ? [`  blue ${SCORE}  score / engrave lightly — glue guides and engraved detail`] : []),
-    '', 'ASSEMBLY', '  1. Cut every file from the same thickness. Files are 1:1 in millimetres — do not rescale.',
-    '  2. Stack in file order, 01 at the bottom. Dry-fit before gluing.',
-    '  3. Glue from the bottom up; a thin, even coat of wood glue, kept 2 mm inside the edges.',
-    '  4. Press flat under a book while it dries.', '',
+    t('{name} — laser layer pack', { name: tn(d.name) }), t('Made with Mandala Stack Studio'), '',
+    `${t('Finished size')}: ${mm(W)} x ${mm(H)} mm, ${t('{n} mm tall', { n: mm(stack.length * d.thickness) })}`,
+    `${t('Material')}: ${t('{n} sheets of {mm} mm', { n: stack.length, mm: d.thickness })}`,
+    `${t('Kerf compensation')}: ${d.kerf ? t('{n} mm (already applied)', { n: d.kerf }) : t('None')}`, '',
+    t('FILES'), ...cuts.map((c, i) => `  ${c.file}  ${mm(c.w)} x ${mm(c.h)} mm   ${i === 0 ? '(' + t('bottom') + ')' : i === cuts.length - 1 ? '(' + t('top') + ')' : ''}`),
+    '  all-layers.svg   ' + t('every sheet on one page'), '  cutting-machine-layers.svg   ' + t('filled colour layers for Cricut / Silhouette'), '  assembly-guide.html   ' + t('printable step-by-step pictures'), ...(d.sheet && d.sheet.w > 0 ? ['  material-plan/   ' + t('layers arranged on your stock sheets')] : []), '  preview.svg      ' + t('assembled, coloured reference'), '  project.mandala.json   ' + t('re-open in the app to keep editing'), '',
+    t('LINE COLOURS'), `  ${CUT}  ${t('red: cut through')}`, ...(d.guides || stack.some((l) => l.score.length) ? [`  ${SCORE}  ${t('blue: score / engrave lightly — glue guides and engraved detail')}`] : []),
+    '', t('ASSEMBLY'), '  1. ' + t('Cut every file from the same thickness. Files are 1:1 in millimetres — do not rescale.'),
+    '  2. ' + t('Stack in file order, 01 at the bottom. Dry-fit before gluing.'),
+    '  3. ' + t('Glue from the bottom up; a thin, even coat of wood glue, kept 2 mm inside the edges.'),
+    '  4. ' + t('Press flat under a book while it dries.'), '',
   ].join('\n');
 }
 

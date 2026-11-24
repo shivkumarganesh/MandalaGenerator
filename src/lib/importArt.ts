@@ -1,6 +1,7 @@
 // Three ways in: an SVG (filled shapes AND stroke-only outlines), a bitmap (traced to a
 // silhouette), or typed text. All of them end as a CustomMotif — normalised artwork that can be a
 // centrepiece or be repeated around the mandala like any built-in motif.
+import { t } from './i18n';
 import DOMPurify from 'dompurify';
 import parse from 'parse-svg-path';
 import abs from 'abs-svg-path';
@@ -131,9 +132,9 @@ export function importSvg(text: string, name: string): { motif: CustomMotif; not
       const stroked: Shape[] = [];
       groups.forEach((ls, w) => stroked.push(...strokeToShapes(ls, w)));
       shapes = union([...shapes, ...stroked]);
-      notes.push(`${lines.length} outline${lines.length > 1 ? 's were' : ' was'} thickened into cuttable lines.`);
+      notes.push(t('Outlines thickened into cuttable lines: {n}.', { n: lines.length }));
     }
-    if (skippedOpen) notes.push(`${skippedOpen} open path${skippedOpen > 1 ? 's' : ''} without a stroke skipped.`);
+    if (skippedOpen) notes.push(t('Open paths without a stroke skipped: {n}.', { n: skippedOpen }));
     if (!shapes.length) throw new Error('No shapes with a fill or stroke were found in that SVG.');
     return { motif: toMotif(shapes, name), notes };
   } finally { host.remove(); }

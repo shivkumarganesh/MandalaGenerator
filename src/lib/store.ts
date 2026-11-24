@@ -1,4 +1,5 @@
 // One small store: the design (with undo history) and the transient UI state.
+import { t } from './i18n';
 import { useSyncExternalStore } from 'react';
 import type { Design, Element, Layer } from './types';
 import { TEMPLATES, fromTemplate, layer as mkLayer, uid, PALETTES, paletteColors } from './recipes';
@@ -84,8 +85,9 @@ export function setUI(patch: Partial<UI>) {
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
-export function toast(msg: string) {
-  setUI({ toast: msg });
+/** `msg` is English; it is translated here. */
+export function toast(msg: string, vars?: Record<string, string | number>) {
+  setUI({ toast: t(msg, vars) });
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => setUI({ toast: null }), 2600);
 }

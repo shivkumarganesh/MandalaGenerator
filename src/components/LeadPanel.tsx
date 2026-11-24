@@ -17,14 +17,15 @@ import { IS_ATOMM } from '../lib/atomm';
 import { addElement, getState, loadDesign, patchDesign, setDesign, setUI, toast, useStore, type Tool } from '../lib/store';
 import { fitToFrame, makeFrame, presetFrame, templateDesign, PRESET_FRAMES } from '../lib/frame';
 import { Alert, Icon, Segmented, Slider } from './ui';
+import { rich, t, tn } from '../lib/i18n';
 
 const TITLES: Record<Tool, string> = { templates: 'Start', motifs: 'Motifs', draw: 'Draw', import: 'Import', project: 'Project' };
 
 function Header({ tool }: { tool: Tool }) {
   return (
     <div className="gen-rail-header">
-      <span className="gen-rail-title">{TITLES[tool]}</span>
-      <button type="button" className="btn-plate" aria-label="Collapse panel" onClick={() => setUI({ leadOpen: false })}><Icon name="panel" /></button>
+      <span className="gen-rail-title">{t(TITLES[tool])}</span>
+      <button type="button" className="btn-plate" aria-label={t('Collapse panel')} onClick={() => setUI({ leadOpen: false })}><Icon name="panel" /></button>
     </div>
   );
 }
@@ -53,7 +54,7 @@ function OpToggle() {
   return (
     <div className="rail-section">
       <Segmented label="New shapes" value={op} onChange={(v) => setUI({ addOp: v })} options={[{ id: 'add', label: 'Add material' }, { id: 'cut', label: 'Cut a window' }]} />
-      <p className="field-note flush">{op === 'add' ? 'New shapes become part of the selected layer.' : 'New shapes are cut out of the selected layer, so the layer below shows through.'}</p>
+      <p className="field-note flush">{op === 'add' ? t('New shapes become part of the selected layer.') : t('New shapes are cut out of the selected layer, so the layer below shows through.')}</p>
     </div>
   );
 }
@@ -117,7 +118,7 @@ function Templates() {
   }
   const shapeTile = (id: string, label: string) => (
     <button key={id} type="button" className="thumb thumb-sm" aria-pressed={frameId === id} onClick={() => setFrame(id === 'free' ? null : presetFrame(id, size()))}>
-      <span className="thumb-card"><FrameIcon id={id} /></span><span className="thumb-label">{label}</span>
+      <span className="thumb-card"><FrameIcon id={id} /></span><span className="thumb-label">{t(label)}</span>
     </button>
   );
   const extra = PRESET_FRAMES.filter((f) => !LAYOUTS.includes(f.id));
@@ -125,45 +126,45 @@ function Templates() {
     <>
       <div className="gen-rail-content">
         <div className="rail-section">
-          <h4>1 · Layout</h4>
+          <h4>{t('1 · Layout')}</h4>
           <div className="thumb-grid-sm">
             {shapeTile('free', 'Free form')}
             {PRESET_FRAMES.filter((f) => LAYOUTS.includes(f.id)).map((f) => shapeTile(f.id, f.label))}
             {(moreShapes || extra.some((f) => f.id === frameId)) && extra.map((f) => shapeTile(f.id, f.label))}
           </div>
           <div className="inline-form">
-            <button type="button" className="btn btn-secondary grow" onClick={() => setMoreShapes(!moreShapes)}>{moreShapes ? 'Fewer shapes' : 'More shapes'}</button>
+            <button type="button" className="btn btn-secondary grow" onClick={() => setMoreShapes(!moreShapes)}>{moreShapes ? t('Fewer shapes') : t('More shapes')}</button>
             <label className="btn btn-secondary file-btn grow">
-              <Icon name="upload" />Your SVG
-              <input type="file" accept=".svg,image/svg+xml" aria-label="Shape outline file" onChange={(e) => { onShapeFile(e.target.files?.[0]); e.target.value = ''; }} />
+              <Icon name="upload" />{t('Your SVG')}
+              <input type="file" accept=".svg,image/svg+xml" aria-label={t('Shape outline file')} onChange={(e) => { onShapeFile(e.target.files?.[0]); e.target.value = ''; }} />
             </label>
           </div>
-          {frameId === 'custom' && <p className="field-note flush">Growing inside “{design.frame!.name}”.</p>}
+          {frameId === 'custom' && <p className="field-note flush">{t('Growing inside “{name}”.', { name: design.frame!.name })}</p>}
           {err && <Alert kind="error">{err}</Alert>}
         </div>
         <div className="rail-section">
-          <h4>2 · Style</h4>
+          <h4>{t('2 · Style')}</h4>
           <span className="select-field block">
-            <select className="select" aria-label="Style" value={genStyle} onChange={(e) => setUI({ genStyle: e.target.value })}>
-              <option value="">Any style</option>
-              {STYLES.map((st) => <option key={st} value={st}>{STYLE_LABELS[st]}</option>)}
+            <select className="select" aria-label={t('Style')} value={genStyle} onChange={(e) => setUI({ genStyle: e.target.value })}>
+              <option value="">{t('Any style')}</option>
+              {STYLES.map((st) => <option key={st} value={st}>{t(STYLE_LABELS[st])}</option>)}
             </select>
             <Icon name="chevron" />
           </span>
         </div>
         <div className="rail-section">
-          <h4>3 · Layers</h4>
+          <h4>{t('3 · Layers')}</h4>
           <Segmented label="Layers per design" value={String(genLayers)} onChange={(v) => setUI({ genLayers: +v })}
             options={LAYER_CHOICES.map((n) => ({ id: String(n), label: n ? String(n) : 'Any' }))} />
         </div>
-        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => surprise()}><Icon name="sparkle" />Surprise me</button>
-        <button type="button" className="btn btn-secondary btn-block" disabled={!design.layers.length} onClick={() => surprise(true)}>More like this</button>
-        <p className="field-note flush">Every press is a new {genStyle ? STYLE_LABELS[genStyle as Style].toLowerCase() : 'design'}{genLayers ? ` with ${genLayers} layers` : ''}{design.frame ? ` inside your ${design.frame.name.toLowerCase()}` : ''}. “More like this” keeps the style, layer count and colours. Undo brings the last one back.</p>
+        <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => surprise()}><Icon name="sparkle" />{t('Surprise me')}</button>
+        <button type="button" className="btn btn-secondary btn-block" disabled={!design.layers.length} onClick={() => surprise(true)}>{t('More like this')}</button>
+        <p className="field-note flush">{t('Every press is a new design. “More like this” keeps the style, layer count and colours. Undo brings the last one back.')}</p>
         <div className="rail-section">
-          <h4>Colours</h4>
-          <div className="palette-grid" role="group" aria-label="Colour palette">
+          <h4>{t('Colours')}</h4>
+          <div className="palette-grid" role="group" aria-label={t('Colour palette')}>
             {PALETTES.map((p) => (
-              <button key={p.id} type="button" className="palette" title={p.label} aria-label={p.label} onClick={() => setDesign((d) => applyPalette(d, p))}>
+              <button key={p.id} type="button" className="palette" title={t(p.label)} aria-label={t(p.label)} onClick={() => setDesign((d) => applyPalette(d, p))}>
                 {p.colors.map((c, i) => <i key={i} style={{ background: c }} />)}
               </button>
             ))}
@@ -172,12 +173,12 @@ function Templates() {
       </div>
       {[['Thanksgiving', TEMPLATES.filter((t) => t.group === 'Thanksgiving')], ['Christmas', TEMPLATES.filter((t) => t.group === 'Christmas')], ['Pattern algorithms', TEMPLATES.filter((t) => t.group === 'Pattern algorithms')], ['All styles', TEMPLATES.filter((t) => !t.group)]].map(([title, list]) => (
         <div key={title as string}>
-          <div className="gen-rail-content"><h4>{title as string} ({(list as Template[]).length})</h4></div>
-          <div className="thumb-grid" role="listbox" aria-label={`${title} templates`}>
-            {(list as Template[]).map((t) => (
-              <button key={t.id} type="button" className="thumb" role="option" aria-selected={design.name === t.label} onClick={() => loadDesign(templateDesign(t, genLayers || undefined))}>
-                <span className="thumb-card"><svg viewBox={templatePaths(t).box} aria-hidden="true">{templatePaths(t).paths.map((p, i) => <path key={i} d={p.d} fill={p.color} fillRule="evenodd" />)}</svg></span>
-                <span className="thumb-label">{t.label}</span>
+          <div className="gen-rail-content"><h4>{t(title as string)} ({(list as Template[]).length})</h4></div>
+          <div className="thumb-grid" role="listbox" aria-label={t(title as string)}>
+            {(list as Template[]).map((tp) => (
+              <button key={tp.id} type="button" className="thumb" role="option" aria-selected={design.name === tp.label} onClick={() => loadDesign(templateDesign(tp, genLayers || undefined))}>
+                <span className="thumb-card"><svg viewBox={templatePaths(tp).box} aria-hidden="true">{templatePaths(tp).paths.map((p, i) => <path key={i} d={p.d} fill={p.color} fillRule="evenodd" />)}</svg></span>
+                <span className="thumb-label">{t(tp.label)}</span>
               </button>
             ))}
           </div>
@@ -235,53 +236,53 @@ function Motifs() {
     <div className="gen-rail-content">
       <OpToggle />
       <div className="rail-section">
-        <h4>Motif rings</h4>
+        <h4>{t('Motif rings')}</h4>
         <div className="thumb-grid-sm">
           {MOTIFS.filter((m) => !m.figure).map((m) => (
             <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
-              <span className="thumb-card"><ShapeThumb shapes={m.shapes} /></span><span className="thumb-label">{m.label}</span>
+              <span className="thumb-card"><ShapeThumb shapes={m.shapes} /></span><span className="thumb-label">{t(m.label)}</span>
             </button>
           ))}
         </div>
       </div>
       <div className="rail-section">
-        <h4>Harvest figures</h4>
+        <h4>{t('Harvest figures')}</h4>
         <div className="thumb-grid-sm">
           {MOTIFS.filter((m) => m.group === 'harvest').map((m) => (
             <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
-              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label clip">{m.label}</span>
+              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label clip">{t(m.label)}</span>
             </button>
           ))}
         </div>
-        <p className="field-note flush">Pumpkin and turkey parts line up when added at the same size: put each part on its own layer.</p>
+        <p className="field-note flush">{t('Pumpkin and turkey parts line up when added at the same size: put each part on its own layer.')}</p>
       </div>
       <div className="rail-section">
-        <h4>Christmas figures</h4>
+        <h4>{t('Christmas figures')}</h4>
         <div className="thumb-grid-sm">
           {MOTIFS.filter((m) => m.figure && m.group !== 'harvest').map((m) => (
             <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addMotif(m.id)}>
-              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label clip">{m.label}</span>
+              <span className="thumb-card"><ShapeThumb shapes={m.shapes} aspect={m.aspect} /></span><span className="thumb-label clip">{t(m.label)}</span>
             </button>
           ))}
         </div>
-        <p className="field-note flush">Each figure comes as a line drawing and as a filled shape. Put the shape on one layer and the drawing on the layer above.</p>
+        <p className="field-note flush">{t('Each figure comes as a line drawing and as a filled shape. Put the shape on one layer and the drawing on the layer above.')}</p>
       </div>
       <div className="rail-section">
-        <h4>Discs &amp; bands</h4>
+        <h4>{t('Discs & bands')}</h4>
         <div className="thumb-grid-sm">
           {DISCS.map((d) => (
             <button key={d.label} type="button" className="thumb thumb-sm" onClick={() => { const s = getState(); addElement(disc({ ...d.make(designR(s.design)), op: s.ui.addOp })); }}>
-              <span className="thumb-card"><svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true">{d.icon ?? edgeIcon(d.make(100).edge!, d.make(100).lobes!)}</svg></span><span className="thumb-label">{d.label}</span>
+              <span className="thumb-card"><svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true">{d.icon ?? edgeIcon(d.make(100).edge!, d.make(100).lobes!)}</svg></span><span className="thumb-label">{t(d.label)}</span>
             </button>
           ))}
         </div>
       </div>
       <div className="rail-section">
-        <h4>Pattern curves</h4>
+        <h4>{t('Pattern curves')}</h4>
         <div className="thumb-grid-sm">
           {PATTERNS.map((p) => (
             <button key={p.id} type="button" className="thumb thumb-sm" onClick={() => { const st = getState(); const R = designR(st.design); addElement(curve({ pattern: p.id, op: st.ui.addOp, size: +(R * 0.8).toFixed(1), ...p.defaults, line: p.id === 'phyllo' ? +(R * 0.04).toFixed(1) : +(Math.max(1.8, R * 0.022)).toFixed(1) })); }}>
-              <span className="thumb-card"><svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true"><path d={pathD(curveShapes(p.id, 0.5, p.defaults.a, p.defaults.b, p.defaults.c, p.id === 'phyllo' ? 0.1 : p.id === 'flowerlife' || p.id === 'web' || p.id === 'starpoly' || p.id === 'guilloche' ? 0.012 : 0.02), 4)} fill="currentColor" fillRule="evenodd" /></svg></span><span className="thumb-label">{p.label}</span>
+              <span className="thumb-card"><svg viewBox="-0.58 -0.58 1.16 1.16" aria-hidden="true"><path d={pathD(curveShapes(p.id, 0.5, p.defaults.a, p.defaults.b, p.defaults.c, p.id === 'phyllo' ? 0.1 : p.id === 'flowerlife' || p.id === 'web' || p.id === 'starpoly' || p.id === 'guilloche' ? 0.012 : 0.02), 4)} fill="currentColor" fillRule="evenodd" /></svg></span><span className="thumb-label">{t(p.label)}</span>
             </button>
           ))}
         </div>
@@ -294,7 +295,7 @@ function Motifs() {
 function Artwork({ custom }: { custom: CustomMotif[] }) {
   return (
     <div className="rail-section">
-      <h4>Your artwork</h4>
+      <h4>{t('Your artwork')}</h4>
       <div className="thumb-grid-sm">
         {custom.map((m) => (
           <button key={m.id} type="button" className="thumb thumb-sm" onClick={() => addCustom(m)}>
@@ -312,18 +313,18 @@ function Draw() {
   const copies = brush.fold * (brush.mirror ? 2 : 1);
   return (
     <div className="gen-rail-content">
-      <Alert kind="info"><p>Draw on the canvas — every stroke repeats <strong>{copies}×</strong> around the centre as you go.</p></Alert>
+      <Alert kind="info"><p>{rich('Draw on the canvas — every stroke repeats **{n}×** around the centre as you go.', { n: copies })}</p></Alert>
       <OpToggle />
       <div className="rail-section">
-        <h4>Brush</h4>
+        <h4>{t('Brush')}</h4>
         <div className="rail-fields">
           <Slider label="Thickness" value={brush.size} min={1.5} max={20} step={0.5} onChange={(v) => set({ size: v })} format={(v) => v + ' mm'} />
           <Slider label="Repeats" value={brush.fold} min={1} max={24} onChange={(v) => set({ fold: v })} format={(v) => v + '×'} />
-          <div className="field-row"><span className="field-label">Mirror each repeat</span>
+          <div className="field-row"><span className="field-label">{t('Mirror each repeat')}</span>
             <Segmented label="Mirror" value={brush.mirror ? 'on' : 'off'} onChange={(v) => set({ mirror: v === 'on' })} options={[{ id: 'on', label: 'On' }, { id: 'off', label: 'Off' }]} /></div>
         </div>
       </div>
-      <p className="field-note flush">Hold Space and drag to move the view. Strokes land on the selected layer; pick another tool to select and edit them.</p>
+      <p className="field-note flush">{t('Hold Space and drag to move the view. Strokes land on the selected layer; pick another tool to select and edit them.')}</p>
     </div>
   );
 }
@@ -365,27 +366,27 @@ function Import() {
     <div className="gen-rail-content">
       <label className="dropzone" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); onFile(e.dataTransfer.files[0]); }}>
         <span className="plate"><Icon name="upload" /></span>
-        <strong>Click or drop your artwork</strong>
-        <small>SVG shapes or outlines · PNG / JPG silhouettes</small>
-        <input type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" aria-label="Artwork file" onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ''; }} />
+        <strong>{t('Click or drop your artwork')}</strong>
+        <small>{t('SVG shapes or outlines · PNG / JPG silhouettes')}</small>
+        <input type="file" accept=".svg,.png,.jpg,.jpeg,.webp,image/svg+xml,image/png,image/jpeg,image/webp" aria-label={t('Artwork file')} onChange={(e) => { onFile(e.target.files?.[0]); e.target.value = ''; }} />
       </label>
       {err && <Alert kind="error">{err}</Alert>}
       {notes.map((n) => <Alert key={n} kind="info">{n}</Alert>)}
 
       {bitmap && (
         <div className="rail-section">
-          <h4>Trace “{bitmap.name}”</h4>
+          <h4>{t('Trace “{name}”', { name: bitmap.name })}</h4>
           <div className="trace-preview">
-            {traced.length ? <svg viewBox={`0 0 ${bitmap.img.width} ${bitmap.img.height}`} aria-label="Traced preview"><path d={pathD(traced, 1)} fill="currentColor" fillRule="evenodd" /></svg> : <span>Nothing dark enough — move the slider</span>}
+            {traced.length ? <svg viewBox={`0 0 ${bitmap.img.width} ${bitmap.img.height}`} aria-label={t('Traced preview')}><path d={pathD(traced, 1)} fill="currentColor" fillRule="evenodd" /></svg> : <span>{t('Nothing dark enough — move the slider')}</span>}
           </div>
           <div className="rail-fields">
             <Slider label="Darkness cut-off" value={threshold} min={5} max={95} onChange={setThreshold} format={(v) => v + '%'} />
-            <div className="field-row"><span className="field-label">Keep</span>
+            <div className="field-row"><span className="field-label">{t('Keep')}</span>
               <Segmented label="Keep" value={invert ? 'light' : 'dark'} onChange={(v) => setInvert(v === 'light')} options={[{ id: 'dark', label: 'Dark areas' }, { id: 'light', label: 'Light areas' }]} /></div>
           </div>
-          <button type="button" className="btn btn-primary btn-block" disabled={!traced.length} onClick={() => { try { place(toMotif(traced, bitmap.name)); setBitmap(null); } catch (e) { setErr(e instanceof Error ? e.message : 'Trace failed.'); } }}>Add to design</button>
+          <button type="button" className="btn btn-primary btn-block" disabled={!traced.length} onClick={() => { try { place(toMotif(traced, bitmap.name)); setBitmap(null); } catch (e) { setErr(e instanceof Error ? e.message : 'Trace failed.'); } }}>{t('Add to design')}</button>
           <div className="rail-fields">
-            <Slider label="Photo tones" value={tones} min={2} max={6} onChange={setTones} format={(v) => v + ' layers'} />
+            <Slider label="Photo tones" value={tones} min={2} max={6} onChange={setTones} format={(v) => t('{n} layers', { n: v })} />
           </div>
           <button type="button" className="btn btn-secondary btn-block" onClick={() => {
             try {
@@ -399,23 +400,23 @@ function Import() {
               loadDesign({ ...emptyDesign(), name: bitmap.name.replace(/\.[a-z0-9]+$/i, '') + ' portrait', layers, customMotifs: motifs, finish: 'painted', solidStack: false });
               setBitmap(null); toast('Layered portrait built — lightest sheet at the bottom');
             } catch (e) { setErr(e instanceof Error ? e.message : 'Could not build the portrait.'); }
-          }}>Build a layered portrait instead</button>
-          <p className="field-note flush">A portrait replaces the current design with one layer per tone, dark on top. Undo brings your design back.</p>
+          }}>{t('Build a layered portrait instead')}</button>
+          <p className="field-note flush">{t('A portrait replaces the current design with one layer per tone, dark on top. Undo brings your design back.')}</p>
         </div>
       )}
 
       <div className="rail-section">
-        <h4>Name or word</h4>
+        <h4>{t('Name or word')}</h4>
         <div className="inline-form">
-          <input className="input grow" value={text} maxLength={24} placeholder="e.g. Maya" aria-label="Text to add" onChange={(e) => setText(e.target.value)} />
-          <button type="button" className="btn btn-secondary" disabled={!text.trim()} onClick={() => { try { place(textToMotif(text.trim(), font)); setText(''); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not add text.'); } }}>Add</button>
+          <input className="input grow" value={text} maxLength={24} placeholder={t('e.g. Maya')} aria-label={t('Text to add')} onChange={(e) => setText(e.target.value)} />
+          <button type="button" className="btn btn-secondary" disabled={!text.trim()} onClick={() => { try { place(textToMotif(text.trim(), font)); setText(''); } catch (e) { setErr(e instanceof Error ? e.message : 'Could not add text.'); } }}>{t('Add')}</button>
         </div>
         <Segmented label="Lettering" value={font} onChange={setFont} options={FONTS.map((f) => ({ id: f.id, label: f.label }))} />
-        <p className="field-note flush">Lettering uses fonts installed on this device, so Script looks different from one computer to the next.</p>
+        <p className="field-note flush">{t('Lettering uses fonts installed on this device, so Script looks different from one computer to the next.')}</p>
       </div>
 
       {custom.length > 0 && <Artwork custom={custom} />}
-      <p className="field-note flush">Imported art behaves like any motif: select it, then change Count and Distance to repeat it around the mandala, or switch it to “Cut a window”.</p>
+      <p className="field-note flush">{t('Imported art behaves like any motif: select it, then change Count and Distance to repeat it around the mandala, or switch it to “Cut a window”.')}</p>
     </div>
   );
 }
@@ -429,19 +430,19 @@ function Project() {
   return (
     <div className="gen-rail-content">
       <div className="rail-section">
-        <h4>Name</h4>
-        <input className="input wide" value={name} maxLength={60} aria-label="Project name" onChange={(e) => patchDesign({ name: e.target.value }, 'name')} />
+        <h4>{t('Name')}</h4>
+        <input className="input wide" value={tn(name)} maxLength={60} aria-label={t('Project name')} onChange={(e) => patchDesign({ name: e.target.value }, 'name')} />
       </div>
       <div className="rail-section">
-        <h4>Share</h4>
+        <h4>{t('Share')}</h4>
         <button type="button" className="btn btn-secondary btn-block" onClick={async () => {
           try { download(await svgToPng(previewSvg(buildStack(cur()), 1600, '#f6f6f7')), slugName(cur()) + '.png'); toast('Picture saved'); }
           catch { toast('Could not render the picture'); }
-        }}><Icon name="image" />Save a picture</button>
+        }}><Icon name="image" />{t('Save a picture')}</button>
         <button type="button" className="btn btn-secondary btn-block" onClick={async () => {
           try { download(await svgToPng(coloringSvg(buildStack(cur()), 2000)), slugName(cur()) + '-colouring-page.png'); toast('Colouring page saved'); }
           catch { toast('Could not render the page'); }
-        }}><Icon name="brush" />Save a colouring page</button>
+        }}><Icon name="brush" />{t('Save a colouring page')}</button>
         <button type="button" className="btn btn-secondary btn-block" disabled={recording} onClick={async () => {
           if (recording) return;
           setRecording(true);
@@ -455,7 +456,7 @@ function Project() {
             toast('Turntable video saved');
           } catch { toast('This browser could not record the video'); }
           setRecording(false);
-        }}><Icon name="cube" />{recording ? 'Recording 6 seconds…' : 'Record a turntable video'}</button>
+        }}><Icon name="cube" />{recording ? t('Recording 6 seconds…') : t('Record a turntable video')}</button>
         {!IS_ATOMM && (
           <button type="button" className="btn btn-secondary btn-block" onClick={async () => {
             try {
@@ -463,14 +464,14 @@ function Project() {
               await navigator.clipboard.writeText(url);
               toast(url.length > 8000 ? 'Link copied — it is long; a project file may travel better' : 'Share link copied');
             } catch { toast('Could not copy — save a project file instead'); }
-          }}><Icon name="link" />Copy share link</button>
+          }}><Icon name="link" />{t('Copy share link')}</button>
         )}
       </div>
       <div className="rail-section">
-        <h4>Project file</h4>
-        <button type="button" className="btn btn-secondary btn-block" onClick={() => download(new Blob([JSON.stringify(cur())], { type: 'application/json' }), slugName(cur()) + '.mandala.json')}><Icon name="download" />Save project</button>
-        <button type="button" className="btn btn-secondary btn-block" onClick={() => fileRef.current?.click()}><Icon name="folder" />Open project</button>
-        <input ref={fileRef} type="file" accept=".json,application/json" hidden aria-label="Project file" onChange={async (e) => {
+        <h4>{t('Project file')}</h4>
+        <button type="button" className="btn btn-secondary btn-block" onClick={() => download(new Blob([JSON.stringify(cur())], { type: 'application/json' }), slugName(cur()) + '.mandala.json')}><Icon name="download" />{t('Save project')}</button>
+        <button type="button" className="btn btn-secondary btn-block" onClick={() => fileRef.current?.click()}><Icon name="folder" />{t('Open project')}</button>
+        <input ref={fileRef} type="file" accept=".json,application/json" hidden aria-label={t('Project file')} onChange={async (e) => {
           const f = e.target.files?.[0]; e.target.value = '';
           if (!f) return;
           const d = parseDesign(await f.text());
@@ -479,10 +480,10 @@ function Project() {
         {err && <Alert kind="error">{err}</Alert>}
       </div>
       <div className="rail-section">
-        <h4>Start over</h4>
-        <button type="button" className="btn btn-secondary btn-block" onClick={() => { loadDesign({ ...emptyDesign(), name: 'My mandala' }); setUI({ tool: 'motifs' }); toast('Blank canvas — Undo brings the old design back'); }}><Icon name="plus" />Blank canvas</button>
+        <h4>{t('Start over')}</h4>
+        <button type="button" className="btn btn-secondary btn-block" onClick={() => { loadDesign({ ...emptyDesign(), name: 'My mandala' }); setUI({ tool: 'motifs' }); toast('Blank canvas — Undo brings the old design back'); }}><Icon name="plus" />{t('Blank canvas')}</button>
       </div>
-      <p className="field-note flush">Your work is saved in this browser as you go.</p>
+      <p className="field-note flush">{t('Your work is saved in this browser as you go.')}</p>
     </div>
   );
 }
@@ -490,7 +491,7 @@ function Project() {
 export default function LeadPanel() {
   const tool = useStore((s) => s.ui.tool);
   return (
-    <aside className="gen-rail gen-rail-lead" aria-label={TITLES[tool]}>
+    <aside className="gen-rail gen-rail-lead" aria-label={t(TITLES[tool])}>
       <Header tool={tool} />
       <div className="gen-rail-scroll">
         {tool === 'templates' && <Templates />}

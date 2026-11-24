@@ -9,6 +9,7 @@ import { bbox, pathD, pointInShapes } from '../lib/geom';
 import { uid } from '../lib/recipes';
 import { addElement, findElement, getState, patchElement, setUI, useStore } from '../lib/store';
 import { usePanZoom, type ZoomApi } from './panzoom';
+import { t, tn } from '../lib/i18n';
 
 export default function Canvas2D({ zoomRef, onPct }: { zoomRef: MutableRefObject<ZoomApi | null>; onPct: (p: number) => void }) {
   const design = useStore((s) => s.design);
@@ -124,7 +125,7 @@ export default function Canvas2D({ zoomRef, onPct }: { zoomRef: MutableRefObject
   return (
     <div className="gen-canvas-stage canvas-ltr" data-drawing={drawing || undefined}>
       <svg ref={pz.svgRef} className="canvas-svg" viewBox={pz.viewBox} onPointerDown={onPointerDown} onContextMenu={(e) => e.preventDefault()}
-        role="img" aria-label={`${design.name}: ${stack.length} layers`}>
+        role="img" aria-label={tn(design.name)}>
         <defs>
           <filter id="lift" x="-10%" y="-10%" width="120%" height="120%">
             <feDropShadow dx="0" dy={blur * 0.9} stdDeviation={blur} floodColor="#000" floodOpacity="0.4" />
@@ -154,7 +155,7 @@ export default function Canvas2D({ zoomRef, onPct }: { zoomRef: MutableRefObject
           </g>
         ))}
       </svg>
-      {!stack.length && <p className="gen-canvas-hint canvas-empty">Pick a template, or add a motif — your mandala appears here</p>}
+      {!stack.length && <p className="gen-canvas-hint canvas-empty">{t('Pick a template, or add a motif — your mandala appears here')}</p>}
     </div>
   );
 }

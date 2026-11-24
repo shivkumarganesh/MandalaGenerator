@@ -2,6 +2,9 @@
 // template so the platform stylesheet (styles/atomm.css) applies unchanged.
 import { useId, useRef, useState, type ReactNode } from 'react';
 import { useStore } from '../lib/store';
+import { t, tn } from '../lib/i18n';
+
+// Labels arrive in English and are translated here, once, so call sites stay readable.
 
 const ICONS: Record<string, ReactNode> = {
   chevron: <path d="m4 6 4 4 4-4" />,
@@ -47,7 +50,7 @@ export function Card({ title, children, defaultOpen = true, action }: { title: s
   return (
     <section className="prop-card" aria-labelledby={id + 't'}>
       <button type="button" className="prop-card-header" id={id + 't'} aria-expanded={open} aria-controls={id + 'b'} onClick={() => setOpen(!open)}>
-        {title}<Icon name="chevron" />
+        {t(title)}<Icon name="chevron" />
       </button>
       <div className="prop-card-body" id={id + 'b'} hidden={!open}>{children}{action}</div>
     </section>
@@ -55,7 +58,7 @@ export function Card({ title, children, defaultOpen = true, action }: { title: s
 }
 
 export function Row({ label, htmlFor, children }: { label: string; htmlFor?: string; children: ReactNode }) {
-  return <div className="field-row">{htmlFor ? <label htmlFor={htmlFor}>{label}</label> : <span className="field-label">{label}</span>}{children}</div>;
+  return <div className="field-row">{htmlFor ? <label htmlFor={htmlFor}>{t(label)}</label> : <span className="field-label">{t(label)}</span>}{children}</div>;
 }
 
 const MM_PER_IN = 25.4;
@@ -87,7 +90,7 @@ export function Num({ label, value, onChange, min = -Infinity, max = Infinity, s
   const bad = text !== null && !isFinite(parseFloat(text.replace(',', '.')));
   return (
     <div className="field-row">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{t(label)}</label>
       <span className="input-number">
         <input
           id={id} ref={ref} inputMode="decimal" data-drag="" aria-invalid={bad || undefined}
@@ -135,7 +138,7 @@ export function Slider({ label, value, onChange, min, max, step = 1, format }: {
   const fill = ((value - min) / (max - min)) * 100;
   return (
     <div className="field-row">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{t(label)}</label>
       <div className="control">
         <input id={id} className="slider" type="range" min={min} max={max} step={step} value={value}
           style={{ ['--fill' as string]: fill + '%' }} onChange={(e) => onChange(+e.target.value)} />
@@ -149,7 +152,7 @@ export function Switch({ label, checked, onChange }: { label: string; checked: b
   const id = useId();
   return (
     <div className="field-row">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{t(label)}</label>
       <span className="switch">
         <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
         <span className="track" aria-hidden="true" /><span className="knob" aria-hidden="true" />
@@ -160,14 +163,14 @@ export function Switch({ label, checked, onChange }: { label: string; checked: b
 
 export function Segmented<T extends string>({ label, value, options, onChange, tabs }: { label: string; value: T; options: { id: T; label: string }[]; onChange: (v: T) => void; tabs?: boolean }) {
   return (
-    <div className={tabs ? 'segmented segmented-tabs' : 'segmented'} role="group" aria-label={label}>
-      {options.map((o) => <button key={o.id} type="button" aria-pressed={value === o.id} onClick={() => onChange(o.id)}>{o.label}</button>)}
+    <div className={tabs ? 'segmented segmented-tabs' : 'segmented'} role="group" aria-label={t(label)}>
+      {options.map((o) => <button key={o.id} type="button" aria-pressed={value === o.id} onClick={() => onChange(o.id)}>{t(o.label)}</button>)}
     </div>
   );
 }
 
 export function SegRow<T extends string>(p: { label: string; value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
-  return <div className="field-row"><span className="field-label">{p.label}</span><Segmented {...p} /></div>;
+  return <div className="field-row"><span className="field-label">{t(p.label)}</span><Segmented {...p} /></div>;
 }
 
 /** Native select in the 28px shell — keeps the platform's keyboard and screen-reader contract for free. */
@@ -175,10 +178,10 @@ export function Select<T extends string>({ label, value, options, onChange }: { 
   const id = useId();
   return (
     <div className="field-row">
-      <label htmlFor={id}>{label}</label>
+      <label htmlFor={id}>{t(label)}</label>
       <span className="select-field">
         <select className="select" id={id} value={value} onChange={(e) => onChange(e.target.value as T)}>
-          {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+          {options.map((o) => <option key={o.id} value={o.id}>{tn(o.label)}</option>)}
         </select>
         <Icon name="chevron" />
       </span>
@@ -196,9 +199,9 @@ export function Swatch({ label, value, onChange }: { label: string; value: strin
 }
 
 export function Note({ children }: { children: ReactNode }) {
-  return <p className="field-note">{children}</p>;
+  return <p className="field-note">{typeof children === 'string' ? t(children) : children}</p>;
 }
 
 export function Alert({ kind, children }: { kind: 'info' | 'success' | 'warning' | 'error'; children: ReactNode }) {
-  return <div className={`alert alert-${kind}`}><Icon name={kind === 'success' ? 'check' : kind === 'info' ? 'info' : 'warn'} /><div className="alert-body">{typeof children === 'string' ? <p>{children}</p> : children}</div></div>;
+  return <div className={`alert alert-${kind}`}><Icon name={kind === 'success' ? 'check' : kind === 'info' ? 'info' : 'warn'} /><div className="alert-body">{typeof children === 'string' ? <p>{t(children)}</p> : children}</div></div>;
 }

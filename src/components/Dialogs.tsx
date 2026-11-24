@@ -5,6 +5,7 @@ import { download, slugName } from '../lib/exportLaser';
 import { IS_ATOMM } from '../lib/atomm';
 import { patchDesign, toast, useStore } from '../lib/store';
 import { Alert, Icon, Num } from './ui';
+import { t, tn } from '../lib/i18n';
 
 function useDialog(open: boolean, onClose: () => void) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -32,13 +33,13 @@ export function TipsDialog({ open, onClose }: { open: boolean; onClose: () => vo
   useEffect(() => { if (open) setI(0); }, [open]);
   return (
     <dialog className="dialog" {...dlg} aria-labelledby="tips-title">
-      <div className="dialog-header"><span id="tips-title">Fabrication Tips</span><Icon name="info" size={20} /><span className="spacer" aria-hidden="true" />
+      <div className="dialog-header"><span id="tips-title">{t('Fabrication Tips')}</span><Icon name="info" size={20} /><span className="spacer" aria-hidden="true" />
         <span className="sr-only" aria-live="polite">{i + 1} / {TIPS.length}</span>
-        <button type="button" className="btn-icon btn-icon-sm" aria-label="Close" onClick={onClose}><Icon name="close" /></button></div>
-      <div className="dialog-body"><div className="tip-slide"><h3>{TIPS[i].title}</h3><p>{TIPS[i].body}</p></div></div>
+        <button type="button" className="btn-icon btn-icon-sm" aria-label={t('Close')} onClick={onClose}><Icon name="close" /></button></div>
+      <div className="dialog-body"><div className="tip-slide"><h3>{t(TIPS[i].title)}</h3><p>{t(TIPS[i].body)}</p></div></div>
       <div className="dialog-footer"><div className="dots" aria-hidden="true">{TIPS.map((_, k) => <i key={k} aria-current={k === i || undefined} />)}</div><span className="spacer" aria-hidden="true" />
-        <button type="button" className="btn btn-secondary" disabled={i === 0} onClick={() => setI(i - 1)}>Back</button>
-        {i < TIPS.length - 1 ? <button type="button" className="btn btn-primary" onClick={() => setI(i + 1)}>Next</button> : <button type="button" className="btn btn-primary" onClick={onClose}>Done</button>}</div>
+        <button type="button" className="btn btn-secondary" disabled={i === 0} onClick={() => setI(i - 1)}>{t('Back')}</button>
+        {i < TIPS.length - 1 ? <button type="button" className="btn btn-primary" onClick={() => setI(i + 1)}>{t('Next')}</button> : <button type="button" className="btn btn-primary" onClick={onClose}>{t('Done')}</button>}</div>
     </dialog>
   );
 }
@@ -71,22 +72,22 @@ export function PrintDialog({ open, onClose }: { open: boolean; onClose: () => v
   };
   return (
     <dialog className="dialog" {...dlg} aria-labelledby="print-title">
-      <div className="dialog-header"><span id="print-title">3D print files</span><Icon name="cube" size={20} /><span className="spacer" aria-hidden="true" />
-        <button type="button" className="btn-icon btn-icon-sm" aria-label="Close" onClick={onClose}><Icon name="close" /></button></div>
+      <div className="dialog-header"><span id="print-title">{t('3D print files')}</span><Icon name="cube" size={20} /><span className="spacer" aria-hidden="true" />
+        <button type="button" className="btn-icon btn-icon-sm" aria-label={t('Close')} onClick={onClose}><Icon name="close" /></button></div>
       <div className="dialog-body print-body">
         <div className="form-field">
-          <span className="form-label">How do you want to print it?</span>
-          <div className="choice-list" role="radiogroup" aria-label="Print method">
+          <span className="form-label">{t('How do you want to print it?')}</span>
+          <div className="choice-list" role="radiogroup" aria-label={t('Print method')}>
             {MODES.map((m) => (
               <button key={m.id} type="button" role="radio" aria-checked={mode === m.id} className="choice" onClick={() => setMode(m.id)}>
                 <span className="choice-mark" aria-hidden="true">{mode === m.id && <Icon name="check" />}</span>
-                <span><strong>{m.label}</strong><small>{m.note}</small></span>
+                <span><strong>{t(m.label)}</strong><small>{t(m.note)}</small></span>
               </button>
             ))}
           </div>
         </div>
         <div className="form-field">
-          <span className="form-label">Thickness</span>
+          <span className="form-label">{t('Thickness')}</span>
           <div className="print-fields">
             <Num label="Each tier" value={design.print.layer} min={0.2} max={10} step={0.1} onChange={(v) => patchDesign({ print: { ...design.print, layer: v } }, 'pl')} />
             {design.plate !== 'none' && <Num label="Backplate" value={design.print.base} min={0.2} max={10} step={0.1} onChange={(v) => patchDesign({ print: { ...design.print, base: v } }, 'pb')} />}
@@ -94,18 +95,18 @@ export function PrintDialog({ open, onClose }: { open: boolean; onClose: () => v
         </div>
         {info && (
           <>
-            <p className="print-summary">{info.stats.sizeX.toFixed(0)} × {info.stats.sizeY.toFixed(0)} mm, {info.stats.height.toFixed(1)} mm tall · {info.tiers.length} colours</p>
-            <ol className="swap-list" aria-label="Colour order, bottom to top">
-              {info.tiers.map((t, i) => <li key={i}><i style={{ background: t.color }} aria-hidden="true" /><span>{t.name}</span><span className="z">{mode === 'parts' ? `${t.h} mm` : i === 0 ? 'start' : `swap at ${t.z0.toFixed(2)} mm`}</span></li>)}
+            <p className="print-summary">{t('{w} × {h} mm, {z} mm tall · {n} colours', { w: info.stats.sizeX.toFixed(0), h: info.stats.sizeY.toFixed(0), z: info.stats.height.toFixed(1), n: info.tiers.length })}</p>
+            <ol className="swap-list" aria-label={t('Colour order, bottom to top')}>
+              {info.tiers.map((tier, i) => <li key={i}><i style={{ background: tier.color }} aria-hidden="true" /><span>{tn(tier.name)}</span><span className="z">{mode === 'parts' ? `${tier.h} mm` : i === 0 ? t('start') : t('swap at {z} mm', { z: tier.z0.toFixed(2) })}</span></li>)}
             </ol>
-            {info.thin.length > 0 && <Alert kind="warning">Some details are thinner than {MIN_FEATURE.print} mm — a 0.4 mm nozzle may skip them. Scale the design up or simplify those layers.</Alert>}
+            {info.thin.length > 0 && <Alert kind="warning">{t('Some details are thinner than {n} mm — a 0.4 mm nozzle may skip them. Scale the design up or simplify those layers.', { n: MIN_FEATURE.print })}</Alert>}
             {info.loose.map((i) => <Alert key={i.id} kind="warning">{i.message}</Alert>)}
           </>
         )}
       </div>
       <div className="dialog-footer"><span className="spacer" aria-hidden="true" />
-        <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-        <button type="button" className="btn btn-primary" aria-busy={busy || undefined} disabled={!info?.tiers.length} onClick={go}><span>Download</span></button></div>
+        <button type="button" className="btn btn-secondary" onClick={onClose}>{t('Cancel')}</button>
+        <button type="button" className="btn btn-primary" aria-busy={busy || undefined} disabled={!info?.tiers.length} onClick={go}><span>{t('Download')}</span></button></div>
     </dialog>
   );
 }

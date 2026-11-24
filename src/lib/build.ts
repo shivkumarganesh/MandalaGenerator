@@ -1,5 +1,6 @@
 // Design → physical layers. This is the ONE geometry pipeline: the 2D canvas, the 3D preview,
 // the laser SVGs and the STL/3MF meshes all consume the BuiltLayer[] it returns.
+import { t, tn } from './i18n';
 import { getStroke } from 'perfect-freehand';
 import type { BuiltLayer, CurveEl, CustomMotif, Design, DiscEl, Element, Issue, Layer, RingEl, Shape, Stats, StrokeEl, Ring } from './types';
 import { area, bbox, circleRing, clean, cutLength, difference, intersect, mapShapes, offset, polygonRing, rotator, shapeArea, union } from './geom';
@@ -292,13 +293,13 @@ function thinLoss(shapes: Shape[], minFeature: number): number {
  */
 export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser, solid = false): Issue[] {
   const issues: Issue[] = [];
-  if (!stack.length) return [{ id: 'empty', level: 'error', message: 'Nothing to make yet — pick a template or add a motif.' }];
+  if (!stack.length) return [{ id: 'empty', level: 'error', message: t('Nothing to make yet — pick a template or add a motif.') }];
 
   const bottom = stack[0];
   if (bottom.shapes.length > 1)
     issues.push({
       id: 'bottom', level: 'error',
-      message: `The bottom sheet is ${bottom.shapes.length} loose pieces, so nothing holds the stack together.`,
+      message: t('The bottom sheet is {n} loose pieces, so nothing holds the stack together.', { n: bottom.shapes.length }),
       fix: { label: 'Add backplate', action: 'plate' },
     });
 
@@ -318,13 +319,13 @@ export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser, so
     if (floating)
       issues.push({
         id: 'float-' + L.id, level: 'error',
-        message: `${L.name}: ${floating} piece${floating > 1 ? 's have' : ' has'} nothing underneath to glue to.`,
+        message: t('{name}: nothing underneath to glue to (pieces: {n}).', { name: tn(L.name), n: floating }),
         fix: { label: 'Fill under layers', action: 'solid' },
       });
     else if (weak)
       issues.push({
         id: 'weak-' + L.id, level: 'warn',
-        message: `${L.name}: ${weak} piece${weak > 1 ? 's overhang' : ' overhangs'} the sheet below by more than half.`,
+        message: t('{name}: overhangs the sheet below by more than half (pieces: {n}).', { name: tn(L.name), n: weak }),
         fix: { label: 'Fill under layers', action: 'solid' },
       });
   }
@@ -334,9 +335,9 @@ export function validate(stack: BuiltLayer[], minFeature = MIN_FEATURE.laser, so
     // a sheet's own shapes carry its fine detail (the fill under upper layers only thickens it)
     const lost = thinLoss(L.own, minFeature);
     if (lost > Math.max(8, area(L.own) * 0.012))
-      issues.push({ id: 'thin-' + L.id, level: 'warn', message: `${L.name}: some details are thinner than ${minFeature} mm and may burn away or snap.` });
+      issues.push({ id: 'thin-' + L.id, level: 'warn', message: t('{name}: some details are thinner than {n} mm and may burn away or snap.', { name: tn(L.name), n: minFeature }) });
     if (L.shapes.length > 24)
-      issues.push({ id: 'many-' + L.id, level: 'warn', message: `${L.name} is ${L.shapes.length} separate pieces to place by hand.` });
+      issues.push({ id: 'many-' + L.id, level: 'warn', message: t('{name}: {n} separate pieces to place by hand.', { name: tn(L.name), n: L.shapes.length }) });
   }
   return issues;
 }

@@ -11,7 +11,8 @@
     "build:atomm": "tsc --noEmit && VITE_TARGET=atomm vite build && node scripts/rename-entry.mjs dist-atomm",
     "build:standalone": "tsc --noEmit && VITE_TARGET=standalone vite build && node scripts/rename-entry.mjs dist-standalone",
     "build": "npm run build:atomm && npm run build:standalone",
-    "release": "npm run build && node scripts/package-release.mjs"
+    "release": "npm run build && node scripts/package-release.mjs",
+    "i18n": "tsx scripts/i18n.ts"
   },
   "dependencies": {
     "abs-svg-path": "^0.1.1",

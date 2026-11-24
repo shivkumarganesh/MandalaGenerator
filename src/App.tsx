@@ -13,6 +13,7 @@ import { PrintDialog, TipsDialog } from './components/Dialogs';
 import Guide from './components/Guide';
 import { Icon, Segmented } from './components/ui';
 import type { ZoomApi } from './components/panzoom';
+import { t } from './lib/i18n';
 
 const Preview3D = lazy(() => import('./components/Preview3D'));
 
@@ -53,7 +54,7 @@ export default function App() {
 
   useAtommExport(async (intent) => {
     const r = await buildExport(intent);
-    platformToast(intent === 'openInStudio' ? 'Sent to Studio' : 'Layer pack exported', 'success');
+    platformToast(intent === 'openInStudio' ? t('Sent to Studio') : t('Layer pack exported'), 'success');
     return r;
   });
 
@@ -79,10 +80,10 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement;
-      const typing = t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
+      const el = e.target as HTMLElement;
+      const typing = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
       const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key.toLowerCase() === 'z') { if (typing && (t as HTMLInputElement).type !== 'range') return; e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+      if (mod && e.key.toLowerCase() === 'z') { if (typing && (el as HTMLInputElement).type !== 'range') return; e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
       if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
       if (typing) return;
       const sel = getState().ui.selected;
@@ -104,22 +105,22 @@ export default function App() {
   return (
     <div className="gen-app">
       <div className="gen-body">
-        <nav className="gen-rail gen-rail-tools" aria-label="Tools">
-          {TOOLS.map((t) => (
-            <button key={t.id} type="button" className="rail-item" aria-pressed={tool === t.id && leadOpen}
-              onClick={() => (tool === t.id ? setUI({ leadOpen: !leadOpen }) : setUI({ tool: t.id, leadOpen: true }))}>
-              <span className="plate"><Icon name={t.icon} /></span>{t.label}
+        <nav className="gen-rail gen-rail-tools" aria-label={t('Tools')}>
+          {TOOLS.map((it) => (
+            <button key={it.id} type="button" className="rail-item" aria-pressed={tool === it.id && leadOpen}
+              onClick={() => (tool === it.id ? setUI({ leadOpen: !leadOpen }) : setUI({ tool: it.id, leadOpen: true }))}>
+              <span className="plate"><Icon name={it.icon} /></span>{t(it.label)}
             </button>
           ))}
         </nav>
 
         {leadOpen && <LeadPanel />}
 
-        <main className="gen-canvas" aria-label="Canvas">
+        <main className="gen-canvas" aria-label={t('Canvas')}>
           {view === '2d' && <Canvas2D zoomRef={zoomRef} onPct={onPct} />}
           {view === 'sheets' && <SheetView zoomRef={zoomRef} onPct={onPct} />}
           {view === '3d' && (
-            <Suspense fallback={<div className="gen-canvas-stage"><p className="gen-canvas-hint">Loading 3D preview…</p></div>}>
+            <Suspense fallback={<div className="gen-canvas-stage"><p className="gen-canvas-hint">{t('Loading 3D preview…')}</p></div>}>
               <Preview3D zoomRef={zoomRef} onPct={onPct} />
             </Suspense>
           )}
@@ -127,26 +128,26 @@ export default function App() {
             <Segmented tabs label="View" value={view} options={VIEWS} onChange={(v) => setUI({ view: v })} />
             <div className="gen-tips canvas-help">
               <button type="button" className="btn-tips" onClick={() => setGuide(true)}>
-                <svg className="icon icon-20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.2C8.4 4 6.2 3.6 3.5 3.8v11c2.7-.2 4.9.2 6.5 1.4 1.6-1.2 3.8-1.6 6.5-1.4v-11c-2.7-.2-4.9.2-6.5 1.4ZM10 5.2v11" /></svg>Guide
+                <svg className="icon icon-20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.2C8.4 4 6.2 3.6 3.5 3.8v11c2.7-.2 4.9.2 6.5 1.4 1.6-1.2 3.8-1.6 6.5-1.4v-11c-2.7-.2-4.9.2-6.5 1.4ZM10 5.2v11" /></svg>{t('Guide')}
               </button>
               <button type="button" className="btn-tips" onClick={() => setTips(true)}>
-              <svg className="icon icon-20" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 15.5h5M8.5 17.8h3M10 2.2a5 5 0 0 1 3 9c-.6.5-.9 1.1-.9 1.8H7.9c0-.7-.3-1.3-.9-1.8a5 5 0 0 1 3-9Z" /></svg>Tips
+              <svg className="icon icon-20" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 15.5h5M8.5 17.8h3M10 2.2a5 5 0 0 1 3 9c-.6.5-.9 1.1-.9 1.8H7.9c0-.7-.3-1.3-.9-1.8a5 5 0 0 1 3-9Z" /></svg>{t('Tips')}
               </button>
             </div>
           </div>
           <div className="gen-canvas-bottom">
-            <div className="zoom-cluster" role="group" aria-label="Zoom">
-              <button type="button" aria-label="Zoom out" onClick={() => zoomRef.current?.zoomBy(1 / 1.25)}><Icon name="minus" /></button>
+            <div className="zoom-cluster" role="group" aria-label={t('Zoom')}>
+              <button type="button" aria-label={t('Zoom out')} onClick={() => zoomRef.current?.zoomBy(1 / 1.25)}><Icon name="minus" /></button>
               <span className="zoom-pop">
                 <button type="button" className="zoom-readout" aria-haspopup="true" aria-expanded={zoomMenu} onPointerDown={(e) => e.stopPropagation()} onClick={() => setZoomMenu(!zoomMenu)}>{pct}%</button>
                 {zoomMenu && (
-                  <div className="select-list zoom-menu zoom-menu-pop" role="menu" aria-label="Zoom level" onPointerDown={(e) => e.stopPropagation()}>
+                  <div className="select-list zoom-menu zoom-menu-pop" role="menu" aria-label={t('Zoom level')} onPointerDown={(e) => e.stopPropagation()}>
                     {ZOOMS.map((z) => <button key={z} type="button" className="select-option" role="menuitem" onClick={() => { zoomRef.current?.zoomTo(z); setZoomMenu(false); }}>{z}%</button>)}
                   </div>
                 )}
               </span>
-              <button type="button" aria-label="Zoom in" onClick={() => zoomRef.current?.zoomBy(1.25)}><Icon name="plus" /></button>
-              <button type="button" aria-label="Fit to canvas" onClick={() => zoomRef.current?.fit()}><Icon name="fit" /><span className="tooltip" aria-hidden="true">Fit to canvas</span></button>
+              <button type="button" aria-label={t('Zoom in')} onClick={() => zoomRef.current?.zoomBy(1.25)}><Icon name="plus" /></button>
+              <button type="button" aria-label={t('Fit to canvas')} onClick={() => zoomRef.current?.fit()}><Icon name="fit" /><span className="tooltip" aria-hidden="true">{t('Fit to canvas')}</span></button>
             </div>
           </div>
         </main>

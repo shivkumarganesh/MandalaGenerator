@@ -4,6 +4,7 @@ import { buildStack } from '../lib/build';
 import { CUT, SCORE, cutLayers, sheetLayout } from '../lib/exportLaser';
 import { pathD } from '../lib/geom';
 import { useStore } from '../lib/store';
+import { t, tn } from '../lib/i18n';
 import { usePanZoom, type ZoomApi } from './panzoom';
 
 export function fmtLen(mm: number, unit: 'mm' | 'in', dp = 0): string {
@@ -19,7 +20,7 @@ export default function SheetView({ zoomRef, onPct }: { zoomRef: MutableRefObjec
   const fs = Math.max(3.2, content.w / 62);
   return (
     <div className="gen-canvas-stage canvas-ltr">
-      <svg ref={pz.svgRef} className="canvas-svg" viewBox={pz.viewBox} onPointerDown={(e) => pz.startPan(e)} role="img" aria-label="Cut sheets">
+      <svg ref={pz.svgRef} className="canvas-svg" viewBox={pz.viewBox} onPointerDown={(e) => pz.startPan(e)} role="img" aria-label={t('Cut sheets')}>
         {layout.cells.map(({ c, x, y }, i) => (
           <g key={c.file}>
             <rect className="sheet-bg" x={x - 2} y={y - 2} width={c.w + 4} height={c.h + 4} rx="1" />
@@ -28,12 +29,12 @@ export default function SheetView({ zoomRef, onPct }: { zoomRef: MutableRefObjec
               <path d={pathD(c.cut)} fill={c.color} fillOpacity="0.14" fillRule="evenodd" stroke={CUT} className="cut-line" />
             </g>
             <text className="sheet-label" x={x + c.w / 2} y={y + c.h + 2 + fs * 1.6} fontSize={fs} textAnchor="middle">
-              {i + 1}. {c.name} · {fmtLen(c.w, unit)} × {fmtLen(c.h, unit)}
+              {i + 1}. {tn(c.name)} · {fmtLen(c.w, unit)} × {fmtLen(c.h, unit)}
             </text>
           </g>
         ))}
       </svg>
-      {!layout.cells.length && <p className="gen-canvas-hint canvas-empty">Nothing to cut yet</p>}
+      {!layout.cells.length && <p className="gen-canvas-hint canvas-empty">{t('Nothing to cut yet')}</p>}
     </div>
   );
 }
